@@ -126,7 +126,7 @@ export default function SoundPlayer({ recordings, animalName }: SoundPlayerProps
           <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
             {recording.en || animalName} - {recording.type || 'Recording'}
           </h4>
-          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 flex-wrap">
             <span>Recorded by {recording.rec}</span>
             <span>•</span>
             <span>{recording.cnt}</span>
@@ -138,10 +138,28 @@ export default function SoundPlayer({ recordings, animalName }: SoundPlayerProps
                 </span>
               </>
             )}
+            {recording.sex && (
+              <>
+                <span>•</span>
+                <span>Sex: {recording.sex}</span>
+              </>
+            )}
+            {recording.stage && (
+              <>
+                <span>•</span>
+                <span>{recording.stage}</span>
+              </>
+            )}
           </div>
           {recording.loc && (
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               📍 {recording.loc}
+              {recording.lat && recording.lon && ` (${recording.lat}, ${recording.lon})`}
+            </p>
+          )}
+          {recording.date && (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              📅 {recording.date}{recording.time ? ` at ${recording.time}` : ''}
             </p>
           )}
         </div>
@@ -149,7 +167,7 @@ export default function SoundPlayer({ recordings, animalName }: SoundPlayerProps
         {/* Audio Element */}
         <audio
           ref={audioRef}
-          src={`https:${recording.file}`}
+          src={recording.file}
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleEnded}
@@ -249,12 +267,26 @@ export default function SoundPlayer({ recordings, animalName }: SoundPlayerProps
           </div>
         )}
 
+        {/* Remarks */}
+        {recording.rmk && (
+          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 rounded text-sm text-gray-700 dark:text-gray-300">
+            <strong>📝 Remarks:</strong> {recording.rmk}
+          </div>
+        )}
+
+        {/* Other species in recording */}
+        {recording.also && recording.also.length > 0 && (
+          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <strong>🐦 Also in recording:</strong> {recording.also.join(', ')}
+          </div>
+        )}
+
         {/* Attribution */}
         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Recordings from{' '}
             <a
-              href={`https://xeno-canto.org/${recording.id}`}
+              href={recording.url || `https://xeno-canto.org/${recording.id}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary-600 hover:text-primary-700 underline"
@@ -262,6 +294,19 @@ export default function SoundPlayer({ recordings, animalName }: SoundPlayerProps
               xeno-canto.org
             </a>
             {' '}(CC BY-NC-SA 4.0)
+            {recording.lic && (
+              <>
+                {' • '}
+                <a
+                  href={recording.lic}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-600 hover:text-primary-700 underline"
+                >
+                  License
+                </a>
+              </>
+            )}
           </p>
         </div>
       </div>

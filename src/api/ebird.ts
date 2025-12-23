@@ -287,3 +287,191 @@ export function filterByDateRange(
     return obsDate >= startDate && obsDate <= endDate;
   });
 }
+
+/**
+ * Get historical observations for a species in a region
+ */
+export async function getHistoricalObservations(
+  speciesCode: string,
+  regionCode: string = 'US',
+  year?: number
+): Promise<EBirdObservation[]> {
+  if (!API_KEYS.EBIRD) {
+    console.warn('eBird API key not configured');
+    return [];
+  }
+
+  const cacheKey = `ebird_historical_${speciesCode}_${regionCode}_${year || 'all'}`;
+  const cached = getCache<EBirdObservation[]>(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    let url = `${API_URLS.EBIRD}/data/obs/${regionCode}/historical/${speciesCode}?fmt=json`;
+    if (year) {
+      url += `&year=${year}`;
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        'X-eBirdApiToken': API_KEYS.EBIRD,
+      },
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const observations: EBirdObservation[] = await response.json();
+    setCache(cacheKey, observations, CACHE_DURATION.BIRD_SIGHTINGS);
+    return observations;
+  } catch (error) {
+    console.error('Error fetching historical observations:', error);
+    return [];
+  }
+}
+
+/**
+ * Get checklist submissions for a hotspot or location
+ */
+export async function getChecklists(
+  locId: string,
+  date?: string
+): Promise<Array<{
+  subId: string;
+  locId: string;
+  locName: string;
+  obsDt: string;
+  numSpecies: number;
+  numObservers: number;
+}>> {
+  if (!API_KEYS.EBIRD) {
+    console.warn('eBird API key not configured');
+    return [];
+  }
+
+  const cacheKey = `ebird_checklists_${locId}_${date || 'all'}`;
+  const cached = getCache<Array<any>>(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    let url = `${API_URLS.EBIRD}/product/checklist/${locId}?fmt=json`;
+    if (date) {
+      url += `&date=${date}`;
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        'X-eBirdApiToken': API_KEYS.EBIRD,
+      },
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const checklists = await response.json();
+    setCache(cacheKey, checklists, CACHE_DURATION.BIRD_SIGHTINGS);
+    return checklists;
+  } catch (error) {
+    console.error('Error fetching checklists:', error);
+    return [];
+  }
+}
+
+/**
+ * Get list of countries/regions available in eBird
+ */
+export async function getRegions(
+  regionType: 'country' | 'subnational1' | 'subnational2' = 'country'
+): Promise<Array<{ code: string; name: string }>> {
+  if (!API_KEYS.EBIRD) {
+    console.warn('eBird API key not configured');
+    return [];
+  }
+
+  const cacheKey = `ebird_regions_${regionType}`;
+  const cached = getCache<Array<{ code: string; name: string }>>(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const url = `${API_URLS.EBIRD}/ref/region/list/${regionType}?fmt=json`;
+
+    const response = await fetch(url, {
+      headers: {
+        'X-eBirdApiToken': API_KEYS.EBIRD,
+      },
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const regions = await response.json();
+    setCache(cacheKey, regions, CACHE_DURATION.ANIMAL_DATA);
+    return regions;
+  } catch (error) {
+    console.error('Error fetching regions:', error);
+    return [];
+  }
+}
+
+/**
+ * Get taxonomy reference information
+ */
+export async function getTaxonomyReference(): Promise<Array<{
+  speciesCode: string;
+  comName: string;
+  sciName: string;
+  category: string;
+  taxonOrder: number;
+  bandingCodes?: string[];
+  comNameCodes?: string[];
+  sciNameCodes?: string[];
+  order?: string;
+  familyComName?: string;
+  familySciName?: string;
+  reportAs?: string;
+}>> {
+  if (!API_KEYS.EBIRD) {
+    console.warn('eBird API key not configured');
+    return [];
+  }
+
+  const cacheKey = 'ebird_taxonomy_full';
+  const cached = getCache<Array<any>>(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const url = `${API_URLS.EBIRD}/ref/taxonomy/ebird?fmt=json&locale=en`;
+
+    const response = await fetch(url, {
+      headers: {
+        'X-eBirdApiToken': API_KEYS.EBIRD,
+      },
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const taxonomy = await response.json();
+    // Cache for longer since taxonomy changes infrequently
+    setCache(cacheKey, taxonomy, CACHE_DURATION.ANIMAL_DATA * 24);
+    return taxonomy;
+  } catch (error) {
+    console.error('Error fetching taxonomy:', error);
+    return [];
+  }
+}

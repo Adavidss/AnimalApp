@@ -246,9 +246,21 @@ export function getRank(score: number, maxScore: number): {
  */
 export function incrementGamePlayCount(gameName: string): number {
   try {
-    const key = `animal_atlas_playcount_${gameName}`;
+    // Use the key format that games are using
+    const key = `${gameName}_play_count`;
     const count = parseInt(localStorage.getItem(key) || '0', 10) + 1;
     localStorage.setItem(key, count.toString());
+    
+    // Track for achievements after incrementing
+    setTimeout(() => {
+      try {
+        const { trackGamePlay } = require('./achievements');
+        trackGamePlay();
+      } catch (e) {
+        // Ignore if achievements module not available
+      }
+    }, 0);
+    
     return count;
   } catch {
     return 1;

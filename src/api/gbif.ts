@@ -241,3 +241,130 @@ export async function getDistributionData(scientificName: string): Promise<{ lat
       lng: occ.decimalLongitude!,
     }));
 }
+
+/**
+ * Get occurrence statistics for a species
+ */
+export async function getOccurrenceStatistics(scientificName: string): Promise<{
+  totalOccurrences: number;
+  countries: Record<string, number>;
+  years: Record<string, number>;
+  basisOfRecord: Record<string, number>;
+} | null> {
+  try {
+    const species = await searchGBIFSpecies(scientificName);
+    if (!species) {
+      return null;
+    }
+
+    const response = await fetch(
+      `${API_URLS.GBIF}/occurrence/search?taxonKey=${species.key}&facet=country&facet=year&facet=basisOfRecord&limit=0`
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+
+    const stats = {
+      totalOccurrences: data.count || 0,
+      countries: {} as Record<string, number>,
+      years: {} as Record<string, number>,
+      basisOfRecord: {} as Record<string, number>,
+    };
+
+    // Process facets
+    const facets = data.facets || [];
+    
+    const countryFacet = facets.find((f: any) => f.field === 'COUNTRY');
+    if (countryFacet) {
+      countryFacet.counts.forEach((count: any) => {
+        stats.countries[count.name] = count.count;
+      });
+    }
+
+    const yearFacet = facets.find((f: any) => f.field === 'YEAR');
+    if (yearFacet) {
+      yearFacet.counts.forEach((count: any) => {
+        stats.years[count.name] = count.count;
+      });
+    }
+
+    const basisFacet = facets.find((f: any) => f.field === 'BASIS_OF_RECORD');
+    if (basisFacet) {
+      basisFacet.counts.forEach((count: any) => {
+        stats.basisOfRecord[count.name] = count.count;
+      });
+    }
+
+    return stats;
+  } catch (error) {
+    console.error('Error fetching occurrence statistics:', error);
+    return null;
+  }
+}
+
+/**
+ * Search for datasets containing a species
+ */
+export async function searchGBIFDatasets(scientificName: string): Promise<Array<{
+  key: string;
+  title: string;
+  description?: string;
+  homepage?: string;
+  publishingOrganizationKey?: string;
+  publishingCountry?: string;
+}>> {
+  try {
+    const species = await searchGBIFSpecies(scientificName);
+    if (!species) {
+      return [];
+    }
+
+    const response = await fetch(
+      `${API_URLS.GBIF}/occurrence/search?taxonKey=${species.key}&facet=datasetKey&limit=0`
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    const facets = data.facets || [];
+    const datasetFacet = facets.find((f: any) => f.field === 'DATASET_KEY');
+
+    if (!datasetFacet || !datasetFacet.counts) {
+      return [];
+    }
+
+    // Get dataset details for top datasets
+    const topDatasets = datasetFacet.counts.slice(0, 10);
+    const datasetDetails = await Promise.all(
+      topDatasets.map(async (count: any) => {
+        try {
+          const datasetResponse = await fetch(`${API_URLS.GBIF}/dataset/${count.name}`);
+          if (datasetResponse.ok) {
+            const dataset = await datasetResponse.json();
+            return {
+              key: dataset.key,
+              title: dataset.title,
+              description: dataset.description,
+              homepage: dataset.homepage,
+              publishingOrganizationKey: dataset.publishingOrganizationKey,
+              publishingCountry: dataset.publishingCountry,
+            };
+          }
+        } catch (err) {
+          console.debug(`Error fetching dataset ${count.name}:`, err);
+        }
+        return null;
+      })
+    );
+
+    return datasetDetails.filter((d): d is NonNullable<typeof d> => d !== null);
+  } catch (error) {
+    console.error('Error searching datasets:', error);
+    return [];
+  }
+}

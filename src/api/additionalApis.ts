@@ -31,61 +31,30 @@ export interface ZooAnimal {
 
 /**
  * Get random animals from Zoo Animal API
+ * NOTE: Zoo Animal API is currently disabled due to CORS/404 errors
+ * Returns empty array immediately without making any network requests
  */
 export async function getRandomZooAnimals(count: number = 10): Promise<ZooAnimal[]> {
-  try {
-    const response = await fetch(`${API_URLS.ZOO_ANIMAL}/animals/rand/${count}`);
-
-    if (!response.ok) {
-      return handleApiErrorSilently(new Error(`Zoo API returned ${response.status}`), 'Zoo Animal API', []);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    return handleApiErrorSilently(error, 'Zoo Animal API', []);
-  }
+  // Zoo Animal API is currently down/broken (CORS/404 errors)
+  // Return empty array immediately - no fetch calls will be made
+  return [];
+  
+  // Original implementation removed due to API issues:
+  // The Zoo Animal API (https://zoo-animal-api.herokuapp.com) is returning 404 and CORS errors
 }
 
 /**
  * Search zoo animals by name (or get random if no name provided)
+ * NOTE: Zoo Animal API is currently disabled due to CORS/404 errors
+ * Returns empty array immediately without making any network requests
  */
 export async function searchZooAnimals(name: string): Promise<ZooAnimal[]> {
-  const cacheKey = name ? `zoo_animal_${name.toLowerCase()}` : `zoo_animal_random_${Date.now()}`;
-
-  // Don't cache random requests
-  if (name) {
-    const cached = getCache<ZooAnimal[]>(cacheKey);
-    if (cached) {
-      return cached;
-    }
-  }
-
-  try {
-    // Get random animals from Zoo API
-    const response = await fetch(`${API_URLS.ZOO_ANIMAL}/animals/rand/50`);
-
-    if (!response.ok) {
-      return handleApiErrorSilently(new Error(`Zoo API returned ${response.status}`), 'Zoo Animal API', []);
-    }
-
-    const data: ZooAnimal[] = await response.json();
-
-    // If no name provided, return all random animals
-    if (!name || name.trim() === '') {
-      return data;
-    }
-
-    // Otherwise filter by name
-    const filtered = data.filter((animal) =>
-      animal.name.toLowerCase().includes(name.toLowerCase())
-    );
-
-    setCache(cacheKey, filtered, CACHE_DURATION.ANIMAL_DATA);
-    return filtered;
-  } catch (error) {
-    return handleApiErrorSilently(error, 'Zoo Animal API', []);
-  }
+  // Zoo Animal API is currently down/broken (CORS/404 errors)
+  // Return empty array immediately - no fetch calls will be made
+  return [];
+  
+  // Original implementation removed due to API issues:
+  // The Zoo Animal API (https://zoo-animal-api.herokuapp.com) is returning 404 and CORS errors
 }
 
 // ============================================================================

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAnimal } from '../context/AnimalContext';
 import { EnrichedAnimal } from '../types/animal';
 import Loader from '../components/Loader';
@@ -12,6 +12,9 @@ import {
   ComparisonPreset
 } from '../utils/comparisonPresets';
 import { useToast } from '../components/Toast';
+import { getAutocompleteSuggestions } from '../utils/searchHelpers';
+import { getRecentSearches, addToRecentSearches } from '../utils/cache';
+import { trackComparison } from '../utils/achievements';
 
 export default function ComparisonTool() {
   const { enrichAnimal } = useAnimal();
@@ -23,6 +26,10 @@ export default function ComparisonTool() {
   const [selectedCategory, setSelectedCategory] = useState<string>('popular');
   const [showCharts, setShowCharts] = useState(true);
   const [savedComparisons, setSavedComparisons] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState([false, false, false]);
+  const [suggestions, setSuggestions] = useState<string[][]>([[], [], []]);
+  const [recentSearches] = useState<string[]>(getRecentSearches());
+  const suggestionRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
 
   // Load saved comparisons on mount
   useEffect(() => {
@@ -53,11 +60,41 @@ export default function ComparisonTool() {
         }
       });
     }
+
+    // Close suggestions when clicking outside
+    function handleClickOutside(event: MouseEvent) {
+      suggestionRefs.forEach((ref, index) => {
+        if (ref.current && !ref.current.contains(event.target as Node)) {
+          const newShowSuggestions = [...showSuggestions];
+          newShowSuggestions[index] = false;
+          setShowSuggestions(newShowSuggestions);
+        }
+      });
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update suggestions when search inputs change
+  useEffect(() => {
+    const newSuggestions = searchInputs.map((query) => {
+      if (query.trim().length > 0) {
+        return getAutocompleteSuggestions(query.trim(), 6);
+      }
+      return [];
+    });
+    setSuggestions(newSuggestions);
+  }, [searchInputs]);
 
   const handleSearch = async (index: number) => {
     const query = searchInputs[index].trim();
     if (!query) return;
+
+    addToRecentSearches(query);
+    const newShowSuggestions = [...showSuggestions];
+    newShowSuggestions[index] = false;
+    setShowSuggestions(newShowSuggestions);
 
     const newLoading = [...loading];
     newLoading[index] = true;
@@ -68,6 +105,19 @@ export default function ComparisonTool() {
       const newAnimals = [...comparisonAnimals];
       newAnimals[index] = animal;
       setComparisonAnimals(newAnimals);
+      
+      // Track comparison when at least 2 animals are loaded (only once per unique pair)
+      const loadedCount = newAnimals.filter(a => a !== null).length;
+      if (loadedCount === 2 && newAnimals[0] !== null && newAnimals[1] !== null) {
+        // Only track once when we reach exactly 2 animals
+        const comparisonKey = 'last_comparison_tracked';
+        const lastTracked = localStorage.getItem(comparisonKey);
+        const currentComparison = `${newAnimals[0]?.name || ''}-${newAnimals[1]?.name || ''}`;
+        if (lastTracked !== currentComparison) {
+          trackComparison();
+          localStorage.setItem(comparisonKey, currentComparison);
+        }
+      }
     } catch (error) {
       console.error('Error searching animal:', error);
     } finally {
@@ -452,20 +502,85 @@ export default function ComparisonTool() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Animal {index + 1}
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Enter animal name..."
-                      value={searchInputs[index]}
-                      onChange={(e) => {
-                        const newInputs = [...searchInputs];
-                        newInputs[index] = e.target.value;
-                        setSearchInputs(newInputs);
-                      }}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch(index)}
-                      className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
-                      disabled={loading[index]}
-                    />
+                  <div ref={suggestionRefs[index]} className="flex gap-2 relative">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        placeholder="Enter animal name..."
+                        value={searchInputs[index]}
+                        onChange={(e) => {
+                          const newInputs = [...searchInputs];
+                          newInputs[index] = e.target.value;
+                          setSearchInputs(newInputs);
+                        }}
+                        onFocus={() => {
+                          const newShowSuggestions = [...showSuggestions];
+                          newShowSuggestions[index] = true;
+                          setShowSuggestions(newShowSuggestions);
+                        }}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSearch(index)}
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                        disabled={loading[index]}
+                      />
+                      {/* Search Suggestions */}
+                      {showSuggestions[index] && (suggestions[index].length > 0 || recentSearches.length > 0) && (
+                        <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden animate-fade-in">
+                          {suggestions[index].length > 0 && (
+                            <>
+                              <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Suggestions</p>
+                              </div>
+                              <div className="max-h-48 overflow-y-auto">
+                                {suggestions[index].map((suggestion, sugIndex) => (
+                                  <button
+                                    key={sugIndex}
+                                    onClick={() => {
+                                      const newInputs = [...searchInputs];
+                                      newInputs[index] = suggestion;
+                                      setSearchInputs(newInputs);
+                                      handleSearch(index);
+                                    }}
+                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 group text-sm"
+                                  >
+                                    <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    <span className="text-gray-700 dark:text-gray-300 group-hover:text-blue-600">{suggestion}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          {recentSearches.length > 0 && (
+                            <>
+                              {suggestions[index].length > 0 && <div className="border-t border-gray-200 dark:border-gray-700" />}
+                              <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Recent Searches</p>
+                              </div>
+                              <div className="max-h-48 overflow-y-auto">
+                                {recentSearches.map((search, searchIndex) => (
+                                  <button
+                                    key={searchIndex}
+                                    onClick={() => {
+                                      const newInputs = [...searchInputs];
+                                      newInputs[index] = search;
+                                      setSearchInputs(newInputs);
+                                      handleSearch(index);
+                                    }}
+                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 group text-sm"
+                                  >
+                                    <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-gray-700 dark:text-gray-300 group-hover:text-blue-600">{search}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <button
                       onClick={() => handleSearch(index)}
                       disabled={!searchInputs[index].trim() || loading[index]}
@@ -502,7 +617,7 @@ export default function ComparisonTool() {
                   {comparisonAnimals.map((animal, index) => (
                     <div
                       key={index}
-                      className="relative h-64 bg-white dark:bg-gray-800"
+                      className="relative h-64 bg-white dark:bg-gray-800 flex items-center justify-center"
                     >
                       {loading[index] ? (
                         <div className="flex items-center justify-center h-full">
@@ -512,9 +627,10 @@ export default function ComparisonTool() {
                         <>
                           {animal.images && animal.images.length > 0 ? (
                             <img
-                              src={animal.images[0].urls.regular}
+                              src={animal.images[0].urls.small || animal.images[0].urls.regular}
                               alt={animal.name}
-                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              className="max-w-full max-h-full object-contain"
                             />
                           ) : (
                             <div className="flex items-center justify-center h-full text-6xl bg-gray-100 dark:bg-gray-700">
@@ -693,7 +809,7 @@ export default function ComparisonTool() {
                                 <img
                                   src={animal!.images[0].urls.small}
                                   alt={animal!.name}
-                                  className="w-full h-full object-cover"
+                                  className="max-w-full max-h-full object-contain"
                                 />
                               ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-purple-400 to-pink-400" />

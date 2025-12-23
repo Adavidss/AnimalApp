@@ -217,31 +217,41 @@ export interface CacheEntry<T> {
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 
 /**
- * xeno-canto recording data (animal sounds)
+ * xeno-canto recording data (animal sounds) - API v3 format
  */
 export interface XenoCantoRecording {
   id: string;
   gen: string; // Genus
   sp: string; // Species
+  ssp?: string; // Subspecies
   en: string; // English name
   rec: string; // Recordist
   cnt: string; // Country
   loc: string; // Location
-  lat: string; // Latitude
-  lng: string; // Longitude
+  lat?: string; // Latitude
+  lon?: string; // Longitude (v3 uses 'lon' instead of 'lng')
+  lng?: string; // Longitude (legacy support)
+  alt?: string; // Altitude
   type: string; // Sound type (call, song, etc.)
-  file: string; // MP3 file URL
-  'file-name': string;
-  sono: {
-    small: string; // Sonogram small image
-    med: string; // Sonogram medium image
-    large: string; // Sonogram large image
-    full: string; // Sonogram full image
+  file: string; // MP3 file URL (may start with //)
+  'file-name'?: string; // Legacy field name
+  url?: string; // Recording page URL (may start with //)
+  sono?: {
+    small?: string; // Sonogram small image (may start with //)
+    med?: string; // Sonogram medium image (may start with //)
+    large?: string; // Sonogram large image (may start with //)
+    full?: string; // Sonogram full image (may start with //)
   };
   length: string; // Duration
-  time: string; // Time of day
-  date: string; // Recording date
+  time?: string; // Time of day
+  date?: string; // Recording date
   q: string; // Quality rating (A-E)
+  sex?: string; // Sex of the bird
+  stage?: string; // Life stage
+  method?: string; // Recording method
+  lic?: string; // License URL (may start with //)
+  rmk?: string; // Remarks
+  also?: string[]; // Other species in recording
 }
 
 /**

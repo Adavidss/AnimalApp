@@ -10,7 +10,7 @@ export const API_URLS = {
   UNSPLASH: 'https://api.unsplash.com',
   GBIF: 'https://api.gbif.org/v1',
   IUCN: 'https://apiv3.iucnredlist.org/api/v3',
-  XENO_CANTO: 'https://xeno-canto.org/api/2',
+  XENO_CANTO: 'https://xeno-canto.org/api/3/recordings',
   MOVEBANK: 'https://www.movebank.org/movebank/service/direct-read',
   EBIRD: 'https://api.ebird.org/v2',
   WORMS: 'https://www.marinespecies.org/rest',
@@ -52,6 +52,7 @@ export const API_KEYS = {
   EBIRD: import.meta.env.VITE_EBIRD_API_KEY || '',
   THE_DOG_API: import.meta.env.VITE_THE_DOG_API_KEY || '',
   THE_CAT_API: import.meta.env.VITE_THE_CAT_API_KEY || '',
+  XENO_CANTO: import.meta.env.VITE_XENO_CANTO_API_KEY || 'badb982f9b570af4dfcf90cdf0f81430526dff20',
 } as const;
 
 /**

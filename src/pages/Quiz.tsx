@@ -158,6 +158,11 @@ export default function Quiz() {
 
     setStats(newStats);
     localStorage.setItem('animal_atlas_quiz_stats', JSON.stringify(newStats));
+    
+    // Track for achievements
+    const { trackQuizCompletion } = require('../utils/achievements');
+    trackQuizCompletion();
+    trackGamePlay();
   };
 
   const getDifficultyColor = (difficulty: string) => {

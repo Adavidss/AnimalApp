@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { GameCard, FeaturedGameCard, CompactGameCard, GameCardProps } from '../../components/games/GameCard';
 
 const GAMES: GameCardProps[] = [
@@ -49,6 +50,38 @@ const GAMES: GameCardProps[] = [
       'Progressive difficulty',
       'Educational & fun'
     ]
+  },
+  {
+    id: 'quiz',
+    title: 'Animal Quiz',
+    description: 'Test your knowledge about animals with multiple-choice questions!',
+    icon: '❓',
+    difficulty: 'medium',
+    estimatedTime: '10-15 min',
+    path: '/quiz',
+    gradient: 'from-orange-500 to-red-500',
+    features: [
+      'Multiple question types',
+      'Daily challenges',
+      'Track your progress',
+      'Learn animal facts'
+    ]
+  },
+  {
+    id: 'compare',
+    title: 'Compare Animals',
+    description: 'Compare characteristics, habitats, and behaviors side-by-side!',
+    icon: '⚖️',
+    difficulty: 'easy',
+    estimatedTime: '5-10 min',
+    path: '/compare',
+    gradient: 'from-indigo-500 to-purple-500',
+    features: [
+      'Side-by-side comparisons',
+      'Visual charts',
+      'Multiple animals',
+      'Detailed analysis'
+    ]
   }
 ];
 
@@ -64,6 +97,9 @@ export default function GamesHub() {
 
     GAMES.forEach(game => {
       try {
+        // Skip quiz and compare for stats calculation as they may use different storage keys
+        if (game.id === 'quiz' || game.id === 'compare') return;
+
         const playCount = localStorage.getItem(`${game.id}_play_count`);
         if (playCount) {
           gamesPlayed += parseInt(playCount);
@@ -79,6 +115,18 @@ export default function GamesHub() {
       }
     });
 
+    // Add quiz stats if available
+    try {
+      const quizStats = localStorage.getItem('animal_atlas_quiz_stats');
+      if (quizStats) {
+        const stats = JSON.parse(quizStats);
+        gamesPlayed += stats.totalQuizzes || 0;
+        score += stats.totalCorrect || 0;
+      }
+    } catch (error) {
+      // Ignore quiz stats errors
+    }
+
     setTotalGamesPlayed(gamesPlayed);
     setTotalScore(score);
   }, []);
@@ -87,86 +135,110 @@ export default function GamesHub() {
     ? GAMES
     : GAMES.filter(game => game.difficulty === selectedDifficulty);
 
-  const featuredGame = GAMES[0]; // Memory Match as featured
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Hero Section */}
-      <section className="relative py-20 bg-gradient-to-br from-purple-600 via-pink-600 to-red-600 overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 text-9xl animate-bounce">🎮</div>
-          <div className="absolute top-32 right-20 text-7xl animate-pulse">🏆</div>
-          <div className="absolute bottom-20 left-1/4 text-8xl animate-bounce delay-100">🎯</div>
-          <div className="absolute bottom-32 right-1/3 text-6xl animate-pulse delay-200">⭐</div>
-        </div>
-
+      <section className="relative py-8 md:py-12 bg-gradient-to-br from-purple-600 via-pink-600 to-red-600 overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="text-8xl mb-6 animate-bounce">🎮</div>
-            <h1 className="text-6xl font-bold text-white mb-6">
+            <div className="text-5xl md:text-6xl mb-4">🎮</div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Animal Games Hub
             </h1>
-            <p className="text-2xl text-white/90 mb-8">
+            <p className="text-lg md:text-xl text-white/90 mb-6">
               Learn about animals through fun and interactive games!
             </p>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-                <div className="text-4xl font-bold text-white mb-2">
-                  {GAMES.length}
+            <div className="grid grid-cols-3 gap-3 md:gap-4 max-w-2xl mx-auto">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 md:p-4">
+                <div className="text-2xl md:text-3xl font-bold text-white mb-1">
+                  {GAMES.length + 3}
                 </div>
-                <div className="text-white/80">Available Games</div>
+                <div className="text-xs md:text-sm text-white/80">Games</div>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-                <div className="text-4xl font-bold text-white mb-2">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 md:p-4">
+                <div className="text-2xl md:text-3xl font-bold text-white mb-1">
                   {totalGamesPlayed}
                 </div>
-                <div className="text-white/80">Games Played</div>
+                <div className="text-xs md:text-sm text-white/80">Played</div>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-                <div className="text-4xl font-bold text-white mb-2">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 md:p-4">
+                <div className="text-2xl md:text-3xl font-bold text-white mb-1">
                   {totalScore.toLocaleString()}
                 </div>
-                <div className="text-white/80">Total Score</div>
+                <div className="text-xs md:text-sm text-white/80">Score</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Featured Game */}
-      <section className="py-16 bg-white dark:bg-gray-800">
+
+      {/* Bird Games Section */}
+      <section className="py-6 md:py-10 bg-gradient-to-br from-blue-50 to-teal-50 dark:from-blue-900/20 dark:to-teal-900/20">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-3">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                  Featured Game
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                  <span className="text-2xl md:text-3xl">🐦</span>
+                  Bird Games
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Most popular game this week
+                <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
+                  Special bird-themed games
                 </p>
               </div>
-              <div className="text-4xl">⭐</div>
+              <Link
+                to="/birds"
+                className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base font-medium rounded-lg transition-colors shadow-lg hover:shadow-xl"
+              >
+                🐦 Explore Birds
+              </Link>
             </div>
 
-            <FeaturedGameCard {...featuredGame} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+              <Link
+                to="/games/bird-games/guess"
+                className="bg-white dark:bg-gray-800 rounded-lg md:rounded-xl p-4 md:p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 text-center"
+              >
+                <div className="text-3xl md:text-4xl mb-2">🖼️</div>
+                <h3 className="text-sm md:text-base font-bold text-gray-900 dark:text-white mb-1">Guess the Bird</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Identify birds from images or sounds</p>
+              </Link>
+
+              <Link
+                to="/games/bird-games/quiz"
+                className="bg-white dark:bg-gray-800 rounded-lg md:rounded-xl p-4 md:p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 text-center"
+              >
+                <div className="text-3xl md:text-4xl mb-2">❓</div>
+                <h3 className="text-sm md:text-base font-bold text-gray-900 dark:text-white mb-1">Bird Quiz</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Test your bird knowledge</p>
+              </Link>
+
+              <Link
+                to="/games/bird-games/bird-sound-match"
+                className="bg-white dark:bg-gray-800 rounded-lg md:rounded-xl p-4 md:p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 text-center"
+              >
+                <div className="text-3xl md:text-4xl mb-2">🎵</div>
+                <h3 className="text-sm md:text-base font-bold text-gray-900 dark:text-white mb-1">Bird Sound Match</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Match sounds to bird species</p>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* All Games */}
-      <section className="py-16">
+      <section className="py-6 md:py-10 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-3">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-1">
                   All Games
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
                   Choose a game and start playing!
                 </p>
               </div>
@@ -177,7 +249,7 @@ export default function GamesHub() {
                   <button
                     key={diff}
                     onClick={() => setSelectedDifficulty(diff)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all capitalize ${
+                    className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all capitalize ${
                       selectedDifficulty === diff
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -191,178 +263,22 @@ export default function GamesHub() {
 
             {/* Games Grid */}
             {filteredGames.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {filteredGames.map(game => (
                   <GameCard key={game.id} {...game} />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-16">
-                <div className="text-6xl mb-4">🎮</div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              <div className="text-center py-8 md:py-12">
+                <div className="text-4xl md:text-5xl mb-3">🎮</div>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2">
                   No games found
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
                   Try selecting a different difficulty level
                 </p>
               </div>
             )}
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Access */}
-      <section className="py-16 bg-white dark:bg-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-              Quick Access
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {GAMES.map(game => (
-                <CompactGameCard
-                  key={game.id}
-                  id={game.id}
-                  title={game.title}
-                  icon={game.icon}
-                  path={game.path}
-                  gradient={game.gradient}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-8">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-                Why Play Animal Games?
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex items-start gap-4">
-                  <div className="text-4xl">🧠</div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white mb-2">
-                      Learn While Playing
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      Each game teaches you about animal characteristics, sounds, and sizes in a fun way.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="text-4xl">🏆</div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white mb-2">
-                      Track Your Progress
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      High scores and stats help you see your improvement over time.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="text-4xl">🎯</div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white mb-2">
-                      Multiple Difficulty Levels
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      From easy to hard, there's a challenge for everyone.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="text-4xl">📱</div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white mb-2">
-                      Play Anywhere
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      All games work great on desktop, tablet, and mobile devices.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Tips Section */}
-      <section className="py-16 bg-white dark:bg-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 text-center">
-              Gaming Tips
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-                <div className="text-3xl mb-3">💡</div>
-                <h3 className="font-bold text-gray-900 dark:text-white mb-2">
-                  Start Easy
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Begin with easy difficulty to learn the game mechanics before moving to harder levels.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-                <div className="text-3xl mb-3">🎧</div>
-                <h3 className="font-bold text-gray-900 dark:text-white mb-2">
-                  Use Headphones
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  For Sound Match, headphones will help you hear animal sounds more clearly.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-                <div className="text-3xl mb-3">⚡</div>
-                <h3 className="font-bold text-gray-900 dark:text-white mb-2">
-                  Speed Bonus
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Faster correct answers earn more points. But don't rush - accuracy matters too!
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-purple-600 to-pink-600">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="text-6xl mb-6">🎮</div>
-            <h2 className="text-4xl font-bold text-white mb-4">
-              Ready to Play?
-            </h2>
-            <p className="text-xl text-white/90 mb-8">
-              Choose a game above and start your animal adventure!
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              {GAMES.map(game => (
-                <a
-                  key={game.id}
-                  href={game.path}
-                  className="px-8 py-4 bg-white text-purple-600 font-bold rounded-lg hover:bg-gray-100 transition-all hover:scale-105 shadow-lg"
-                >
-                  {game.icon} {game.title}
-                </a>
-              ))}
-            </div>
           </div>
         </div>
       </section>

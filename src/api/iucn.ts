@@ -229,3 +229,165 @@ export function getStatusColor(category: string): string {
 
   return colors[category] || 'gray';
 }
+
+/**
+ * Get list of countries where a species is found
+ */
+export async function getIUCNCountries(scientificName: string): Promise<Array<{
+  code: string;
+  name: string;
+  presence: string;
+  origin: string;
+}>> {
+  if (!API_KEYS.IUCN) {
+    return [];
+  }
+
+  try {
+    const species = await fetchIUCNStatus(scientificName);
+    if (!species) {
+      return [];
+    }
+
+    const response = await fetch(
+      `${API_URLS.IUCN}/species/countries/name/${encodeURIComponent(scientificName)}?token=${API_KEYS.IUCN}`
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    if (!data.result || data.result.length === 0) {
+      return [];
+    }
+
+    return data.result.map((country: any) => ({
+      code: country.code,
+      name: country.country,
+      presence: country.presence,
+      origin: country.origin,
+    }));
+  } catch (error) {
+    return handleApiErrorSilently(error, 'IUCN Red List', []);
+  }
+}
+
+/**
+ * Get habitats for a species
+ */
+export async function getIUCNHabitats(scientificName: string): Promise<Array<{
+  code: string;
+  habitat: string;
+  suitability: string;
+  season?: string;
+  importance?: string;
+}>> {
+  if (!API_KEYS.IUCN) {
+    return [];
+  }
+
+  try {
+    const species = await fetchIUCNStatus(scientificName);
+    if (!species) {
+      return [];
+    }
+
+    const response = await fetch(
+      `${API_URLS.IUCN}/habitats/species/name/${encodeURIComponent(scientificName)}?token=${API_KEYS.IUCN}`
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    if (!data.result || data.result.length === 0) {
+      return [];
+    }
+
+    return data.result.map((habitat: any) => ({
+      code: habitat.code,
+      habitat: habitat.habitat,
+      suitability: habitat.suitability,
+      season: habitat.season,
+      importance: habitat.importance,
+    }));
+  } catch (error) {
+    return handleApiErrorSilently(error, 'IUCN Red List', []);
+  }
+}
+
+/**
+ * Get all countries/regions from IUCN
+ */
+export async function getIUCNRegions(): Promise<Array<{ identifier: string; name: string }>> {
+  if (!API_KEYS.IUCN) {
+    return [];
+  }
+
+  const cacheKey = 'iucn_regions';
+  const cached = getCache<Array<{ identifier: string; name: string }>>(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const response = await fetch(
+      `${API_URLS.IUCN}/region/list?token=${API_KEYS.IUCN}`
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    const regions = data.results || [];
+
+    // Cache for 24 hours
+    setCache(cacheKey, regions, CACHE_DURATION.ANIMAL_DATA * 24);
+    return regions;
+  } catch (error) {
+    return handleApiErrorSilently(error, 'IUCN Red List', []);
+  }
+}
+
+/**
+ * Get citation information for a species
+ */
+export async function getIUCNCitations(scientificName: string): Promise<Array<{
+  citation: string;
+  type: string;
+}>> {
+  if (!API_KEYS.IUCN) {
+    return [];
+  }
+
+  try {
+    const species = await fetchIUCNStatus(scientificName);
+    if (!species) {
+      return [];
+    }
+
+    const response = await fetch(
+      `${API_URLS.IUCN}/species/citation/${species.taxonid}?token=${API_KEYS.IUCN}`
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    if (!data.result || data.result.length === 0) {
+      return [];
+    }
+
+    return data.result.map((citation: any) => ({
+      citation: citation.citation,
+      type: citation.citation_type,
+    }));
+  } catch (error) {
+    return handleApiErrorSilently(error, 'IUCN Red List', []);
+  }
+}

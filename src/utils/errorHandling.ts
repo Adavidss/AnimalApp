@@ -350,9 +350,16 @@ export function handleApiErrorSilently(
   apiName: string,
   fallbackValue: any = null
 ): typeof fallbackValue {
-  // Only log in development mode
+  // Check if it's an expected error (404, etc.) - don't log those at all
+  const appError = parseError(error);
+  
+  // Don't log expected errors like 404s (not found)
+  if (appError.statusCode === 404 || appError.type === ErrorType.NOT_FOUND) {
+    return fallbackValue;
+  }
+
+  // Only log unexpected errors in development mode
   if (import.meta.env.DEV) {
-    const appError = parseError(error);
     console.debug(`[${apiName}] API error (silent):`, {
       message: appError.message,
       type: appError.type,

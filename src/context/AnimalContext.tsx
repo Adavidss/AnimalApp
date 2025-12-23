@@ -144,9 +144,15 @@ export function AnimalProvider({ children }: { children: ReactNode }) {
       };
 
       // Fetch data from ALL APIs in parallel (excluding broken FishBase)
+      // Use Promise.allSettled to not fail if one API is slow
+      if (import.meta.env.DEV) {
+        console.log(`[AnimalContext] Starting to enrich: ${animalName} (${scientificName})`);
+      }
+      
+      const startTime = Date.now();
       const [wikipedia, images, conservationStatus, gbifData, sounds, marineData, inatData, fishData] = await Promise.allSettled([
         fetchWikipediaSummary(animalName),
-        fetchUnsplashImages(animalName, 3), // Reduced from 6 to 3 for faster loading
+        fetchUnsplashImages(animalName, 3, scientificName), // Pass scientific name for better accuracy
         fetchIUCNStatus(scientificName),
         searchGBIFSpecies(scientificName),
         isLikelyBird(animalName) ? fetchAnimalSounds(animalName, 5) : Promise.resolve([]), // Only fetch sounds for birds
@@ -154,18 +160,15 @@ export function AnimalProvider({ children }: { children: ReactNode }) {
         getINatSpeciesByName(animalName), // iNaturalist data
         Promise.resolve(null), // FishBase disabled due to SSL certificate issues
       ]);
-
-      // Fetch occurrences if GBIF data is available
-      let occurrences: any[] = [];
-      if (gbifData.status === 'fulfilled' && gbifData.value) {
-        try {
-          occurrences = await fetchGBIFOccurrences(scientificName, 100); // Reduced from 300 to 100 for faster loading
-        } catch (error) {
-          console.error('Error fetching occurrences:', error);
-        }
+      
+      if (import.meta.env.DEV) {
+        console.log(`[AnimalContext] Initial API calls completed in ${Date.now() - startTime}ms`);
+        console.log('[AnimalContext] Images status:', images.status, images.status === 'fulfilled' ? `(${images.value?.length || 0} images)` : images.reason);
       }
 
-      // Fetch additional data based on what we got
+      // Defer non-essential API calls - they'll be loaded on-demand when user views those sections
+      // This significantly speeds up initial page load
+      let occurrences: any[] = [];
       let marineDistribution: any[] | undefined;
       let marineVernacular: any[] | undefined;
       let migrationData: any[] | undefined;
@@ -174,67 +177,11 @@ export function AnimalProvider({ children }: { children: ReactNode }) {
       let inatObservations: any[] | undefined;
       let fishEcology: any | undefined;
 
-      // If marine species found, get distribution & vernacular names
-      if (marineData.status === 'fulfilled' && marineData.value) {
-        try {
-          const [dist, vern] = await Promise.all([
-            getMarineDistribution(marineData.value.AphiaID),
-            getVernacularNames(marineData.value.AphiaID),
-          ]);
-          marineDistribution = dist;
-          marineVernacular = vern;
-        } catch (error) {
-          console.error('Error fetching marine details:', error);
-        }
-      }
+      // Only fetch essential data immediately - defer the rest
+      // These will be loaded lazily when user clicks on relevant tabs/sections
 
-      // Try to get migration data (only for birds and marine mammals that migrate)
-      // Note: Excludes butterflies even though they migrate - Movebank doesn't track them
-      const migratoryKeywords = ['bird', 'whale', 'dolphin', 'turtle', 'seal', 'salmon', 'eel', 'eagle', 'hawk', 'goose', 'duck', 'swan', 'crane', 'warbler', 'hummingbird'];
-      const isMigratoryAnimal = migratoryKeywords.some(keyword => animalName.toLowerCase().includes(keyword));
-
-      if (isMigratoryAnimal) {
-        try {
-          const studies = await searchMovebankStudies(scientificName || animalName);
-          if (studies && studies.length > 0) {
-            migrationStudy = studies[0];
-            migrationData = await getMovebankLocations(studies[0].id, undefined, 100); // Reduced from 500 to 100 for faster loading
-          }
-        } catch (error) {
-          console.error('Error fetching migration data:', error);
-        }
-      }
-
-      // Try to get bird sightings (requires scientific name or species code)
-      try {
-        if (scientificName) {
-          // First try to get species code
-          const speciesResults = await searchSpecies(animalName);
-          if (speciesResults && speciesResults.length > 0) {
-            const speciesCode = speciesResults[0].speciesCode;
-            birdSightings = await getRecentObservations(speciesCode, 'US', 14);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching bird sightings:', error);
-      }
-
-      // Try to get iNaturalist observations
-      try {
-        inatObservations = await getINatObservations(animalName, 10); // Reduced from 20 to 10 for faster loading
-      } catch (error) {
-        console.error('Error fetching iNaturalist observations:', error);
-      }
-
-      // Try to get FishBase ecology data for fish species
-      try {
-        if (fishData.status === 'fulfilled' && fishData.value && fishData.value.length > 0) {
-          const fish = fishData.value[0];
-          fishEcology = await getFishEcology(fish.SpecCode);
-        }
-      } catch (error) {
-        console.error('Error fetching FishBase ecology:', error);
-      }
+      // Images are already prioritized in fetchUnsplashImages (iNaturalist first, then Unsplash)
+      // Just use the images array as-is
 
       // Create enriched animal object with ALL data
       const enriched: EnrichedAnimal = {
@@ -253,7 +200,7 @@ export function AnimalProvider({ children }: { children: ReactNode }) {
         characteristics: {},
         // Original APIs
         wikipedia: wikipedia.status === 'fulfilled' ? wikipedia.value || undefined : undefined,
-        images: images.status === 'fulfilled' ? images.value : [],
+        images: images.status === 'fulfilled' ? (images.value || []).slice(0, 6) : [],
         conservationStatus:
           conservationStatus.status === 'fulfilled'
             ? conservationStatus.value || undefined

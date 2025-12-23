@@ -39,9 +39,15 @@ export default function FactCard({ fact, onShuffle, showCategory = true, showAni
             </span>
           )}
           {showAnimal && fact.animal && (
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+            <a
+              href={`https://en.wikipedia.org/wiki/${encodeURIComponent(fact.animal.replace(/\s+/g, '_'))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:underline font-medium transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
               {fact.animal}
-            </span>
+            </a>
           )}
         </div>
         {onShuffle && (

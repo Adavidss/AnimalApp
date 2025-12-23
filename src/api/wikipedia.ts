@@ -20,7 +20,7 @@ export async function fetchWikipediaSummary(animalName: string): Promise<Wikiped
     let response = await fetch(searchUrl);
 
     // If not found, try to extract a simpler name (e.g., "European Peacock Butterfly" -> "Butterfly")
-    if (!response.ok && animalName.includes(' ')) {
+    if (!response.ok && response.status === 404 && animalName.includes(' ')) {
       const words = animalName.split(' ');
       const lastWord = words[words.length - 1];
 
@@ -30,6 +30,12 @@ export async function fetchWikipediaSummary(animalName: string): Promise<Wikiped
     }
 
     if (!response.ok) {
+      // 404 is expected for animals without Wikipedia pages - handle silently
+      // Don't throw error or log anything, just return null
+      if (response.status === 404) {
+        return null;
+      }
+      // For other errors, use silent handler
       return handleApiErrorSilently(
         new Error(`Wikipedia returned ${response.status}`),
         'Wikipedia',

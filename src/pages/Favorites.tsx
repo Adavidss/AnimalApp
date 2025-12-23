@@ -24,11 +24,40 @@ export default function Favorites() {
 
   useEffect(() => {
     loadFavorites();
+    // Refresh favorites when the page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadFavorites();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   useEffect(() => {
     filterAndSortFavorites();
   }, [favorites, selectedCategory, sortBy]);
+
+  // Listen for storage changes to refresh favorites
+  useEffect(() => {
+    const handleStorageChange = () => {
+      loadFavorites();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Poll for changes since storage events don't fire in same tab
+    const interval = setInterval(() => {
+      const currentFavorites = getFavorites();
+      if (currentFavorites.length !== favorites.length) {
+        loadFavorites();
+      }
+    }, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [favorites.length]);
 
   const loadFavorites = () => {
     const allFavorites = getFavorites();
@@ -82,143 +111,124 @@ export default function Favorites() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <section className="py-16 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            <div className="text-6xl">⭐</div>
-            <h1 className="text-5xl font-bold text-gray-900 dark:text-white">
-              Your Favorites
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              {favorites.length} animal{favorites.length !== 1 ? 's' : ''} saved
-            </p>
-
-            {/* Action Buttons */}
-            {favorites.length > 0 && (
-              <div className="flex gap-4 justify-center flex-wrap">
-                <button
-                  onClick={handleExport}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                    />
-                  </svg>
-                  Export List
-                </button>
-                <button
-                  onClick={() => setShowClearConfirm(true)}
-                  className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                  Clear All
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Collection Progress */}
-      <section className="py-12 bg-white dark:bg-gray-900">
+      {/* Favorites Grid - Moved to top */}
+      <section className="py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <CollectionProgress />
-          </div>
-        </div>
-      </section>
-
-      {/* Filters */}
-      {favorites.length > 0 && (
-        <section className="py-8 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-16 z-30">
-          <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto space-y-4">
-              {/* Category Filter */}
+            {/* Header - Compact */}
+            <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Filter by Category
-                </label>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  <button
-                    onClick={() => setSelectedCategory('all')}
-                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                      selectedCategory === 'all'
-                        ? 'bg-yellow-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    All ({favorites.length})
-                  </button>
-                  {categories.map((category) => {
-                    const count = favorites.filter((f) => f.category === category.id).length;
-                    if (count === 0) return null;
-                    return (
-                      <button
-                        key={category.id}
-                        onClick={() => setSelectedCategory(category.id)}
-                        className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
-                          selectedCategory === category.id
-                            ? 'bg-yellow-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
-                      >
-                        <span>{category.emoji}</span>
-                        {category.name} ({count})
-                      </button>
-                    );
-                  })}
-                </div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <span>⭐</span>
+                  Your Favorites
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  {favorites.length} animal{favorites.length !== 1 ? 's' : ''} saved
+                </p>
               </div>
-
-              {/* Sort */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Sort by
-                </label>
+              {favorites.length > 0 && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setSortBy('recent')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      sortBy === 'recent'
-                        ? 'bg-yellow-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
+                    onClick={handleExport}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2 text-sm"
                   >
-                    Most Recent
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    Export
                   </button>
                   <button
-                    onClick={() => setSortBy('name')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      sortBy === 'name'
-                        ? 'bg-yellow-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
+                    onClick={() => setShowClearConfirm(true)}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2 text-sm"
                   >
-                    Name (A-Z)
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    Clear All
                   </button>
                 </div>
-              </div>
+              )}
             </div>
-          </div>
-        </section>
-      )}
 
-      {/* Favorites Grid */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
+            {/* Filters - Compact */}
+            {favorites.length > 0 && (
+              <div className="mb-6 space-y-3 bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Filter by Category
+                  </label>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    <button
+                      onClick={() => setSelectedCategory('all')}
+                      className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                        selectedCategory === 'all'
+                          ? 'bg-yellow-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      All ({favorites.length})
+                    </button>
+                    {categories.map((category) => {
+                      const count = favorites.filter((f) => f.category === category.id).length;
+                      if (count === 0) return null;
+                      return (
+                        <button
+                          key={category.id}
+                          onClick={() => setSelectedCategory(category.id)}
+                          className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
+                            selectedCategory === category.id
+                              ? 'bg-yellow-600 text-white'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          <span>{category.emoji}</span>
+                          {category.name} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Sort by
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSortBy('recent')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        sortBy === 'recent'
+                          ? 'bg-yellow-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Most Recent
+                    </button>
+                    <button
+                      onClick={() => setSortBy('name')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        sortBy === 'name'
+                          ? 'bg-yellow-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Name (A-Z)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {filteredFavorites.length === 0 ? (
               <EmptyState
                 title={favorites.length === 0 ? 'No favorites yet' : 'No animals in this category'}
@@ -241,17 +251,18 @@ export default function Favorites() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredFavorites.map((favorite) => (
-                  <div
+                  <Link
                     key={favorite.id}
-                    className="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden"
+                    to={`/animal/${encodeURIComponent(favorite.name)}`}
+                    className="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden block cursor-pointer"
                   >
                     {/* Image */}
-                    <div className="relative h-48 bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                    <div className="relative h-48 bg-gray-200 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
                       {favorite.imageUrl ? (
                         <img
                           src={favorite.imageUrl}
                           alt={favorite.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-6xl">
@@ -269,8 +280,12 @@ export default function Favorites() {
 
                       {/* Remove Button */}
                       <button
-                        onClick={() => handleRemove(favorite.name)}
-                        className="absolute top-4 left-4 p-2 bg-red-600 hover:bg-red-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRemove(favorite.name);
+                        }}
+                        className="absolute top-4 left-4 p-2 bg-red-600 hover:bg-red-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
                         title="Remove from favorites"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,14 +316,11 @@ export default function Favorites() {
                         Added {new Date(favorite.addedAt).toLocaleDateString()}
                       </p>
 
-                      <Link
-                        to={`/animal/${encodeURIComponent(favorite.name)}`}
-                        className="block mt-4 text-center px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 font-medium rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors"
-                      >
+                      <div className="mt-4 text-center px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 font-medium rounded-lg">
                         View Details →
-                      </Link>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

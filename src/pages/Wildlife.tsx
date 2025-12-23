@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { searchINatSpecies, INatTaxon } from '../api/inaturalist';
 import { getCategoryTheme } from '../utils/categories';
 import Loader from '../components/Loader';
 import { EmptyState } from '../components/ErrorState';
+import { addToFavorites, removeFromFavorites, isFavorite } from '../utils/favorites';
+import { getAutocompleteSuggestions, getDidYouMeanSuggestion } from '../utils/searchHelpers';
+import { addToRecentSearches } from '../utils/cache';
+import Pagination from '../components/Pagination';
 
 export default function Wildlife() {
   const [animals, setAnimals] = useState<INatTaxon[]>([]);
@@ -13,9 +17,15 @@ export default function Wildlife() {
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const categoryTheme = getCategoryTheme('wildlife');
-  const PER_PAGE = 30;
+  const PER_PAGE = 10;
+  const [allAnimals, setAllAnimals] = useState<INatTaxon[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     loadAnimalsByType();
@@ -32,6 +42,17 @@ export default function Wildlife() {
       else if (selectedType === 'all') query = 'animalia';
 
       const results = await searchINatSpecies(query, currentPage, PER_PAGE);
+      if (currentPage === 1) {
+        setAllAnimals(results);
+        setTotalCount(results.length);
+      } else {
+        // Append new results to existing ones
+        setAllAnimals(prev => {
+          const updated = [...prev, ...results];
+          setTotalCount(updated.length);
+          return updated;
+        });
+      }
       setAnimals(results);
       setHasMore(results.length === PER_PAGE);
       setInitialLoaded(true);
@@ -42,19 +63,57 @@ export default function Wildlife() {
     }
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
+  useEffect(() => {
+    // Update suggestions when query changes
+    if (searchQuery.trim().length > 1) {
+      setSuggestions(getAutocompleteSuggestions(searchQuery.trim(), 5));
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    // Close suggestions when clicking outside
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node) &&
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSearch = async (query?: string) => {
+    const searchTerm = query || searchQuery;
+    if (!searchTerm.trim()) {
       setCurrentPage(1);
       loadAnimalsByType();
       return;
     }
 
+    addToRecentSearches(searchTerm.trim());
     setLoading(true);
+    setShowSuggestions(false);
     try {
-      const results = await searchINatSpecies(searchQuery, 1, PER_PAGE);
+      const results = await searchINatSpecies(searchTerm, 1, PER_PAGE);
+      if (results.length === 0) {
+        const suggestion = getDidYouMeanSuggestion(searchTerm);
+        if (suggestion) {
+          // Show suggestion message
+          console.log(`Did you mean "${suggestion}"?`);
+        }
+      }
       setAnimals(results);
+      setAllAnimals(results);
       setCurrentPage(1);
       setHasMore(results.length === PER_PAGE);
+      setTotalCount(results.length);
     } catch (error) {
       console.error('Error searching wildlife:', error);
     } finally {
@@ -62,25 +121,20 @@ export default function Wildlife() {
     }
   };
 
-  const handleNextPage = () => {
-    if (hasMore && !loading) {
-      setCurrentPage(prev => prev + 1);
-    }
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    handleSearch(suggestion);
+    setShowSuggestions(false);
   };
 
-  const handlePrevPage = () => {
-    if (currentPage > 1 && !loading) {
-      setCurrentPage(prev => prev - 1);
-    }
-  };
-
-  // No need to filter by type since we already load the correct type
-  const filteredAnimals = searchQuery === ''
-    ? animals
-    : animals.filter(animal =>
-        animal.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        animal.preferred_common_name?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  // For browsing (no search), show accumulated results; for search, show current page results
+  const displayAnimals = searchQuery.trim() ? animals : allAnimals;
+  const totalPages = searchQuery.trim()
+    ? Math.ceil((hasMore ? (currentPage * PER_PAGE) : animals.length) / PER_PAGE)
+    : hasMore ? currentPage + 1 : currentPage;
+  const paginatedAnimals = searchQuery.trim()
+    ? animals.slice(0, PER_PAGE)
+    : displayAnimals.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   const animalTypes = ['all', 'Mammalia', 'Aves', 'Reptilia', 'Amphibia'];
 
@@ -144,12 +198,26 @@ export default function Wildlife() {
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto space-y-4">
             <div className="flex gap-4">
-              <div className="flex-1 relative">
+              <div className="flex-1 relative" ref={searchInputRef}>
                 <input
                   type="text"
                   placeholder="Search wildlife..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (e.target.value.length > 1) {
+                      setShowSuggestions(true);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (suggestions.length > 0) setShowSuggestions(true);
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch();
+                      setShowSuggestions(false);
+                    }
+                  }}
                   className="w-full px-4 py-3 pl-12 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 dark:text-white"
                 />
                 <svg
@@ -165,9 +233,27 @@ export default function Wildlife() {
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
+                
+                {/* Autocomplete Suggestions */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div
+                    ref={suggestionsRef}
+                    className="absolute z-10 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto"
+                  >
+                    {suggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-white"
+                      >
+                        {suggestion}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <button
-                onClick={handleSearch}
+                onClick={() => handleSearch()}
                 disabled={loading}
                 className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
               >
@@ -221,18 +307,19 @@ export default function Wildlife() {
                 }
               />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredAnimals.map((animal, index) => (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {paginatedAnimals.map((animal, index) => (
                   <div
                     key={animal.id || index}
                     className="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:scale-105"
                   >
-                    <div className="relative h-48 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 overflow-hidden">
+                    <div className="relative h-48 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 overflow-hidden flex items-center justify-center">
                       {animal.default_photo?.medium_url ? (
                         <img
                           src={animal.default_photo.medium_url}
                           alt={animal.preferred_common_name || animal.name}
-                          className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-300"
+                          className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                             const parent = e.currentTarget.parentElement;
@@ -246,6 +333,63 @@ export default function Wildlife() {
                           {getAnimalEmoji(animal.name)}
                         </div>
                       )}
+                      {/* Favorite Button */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const animalName = animal.preferred_common_name || animal.name;
+                          const favoriteAnimal = {
+                            id: animal.id?.toString() || animalName,
+                            name: animalName,
+                            taxonomy: {
+                              scientific_name: animal.name || ''
+                            },
+                            images: animal.default_photo?.medium_url ? [{
+                              urls: {
+                                small: animal.default_photo.medium_url,
+                                regular: animal.default_photo.large_url || animal.default_photo.medium_url
+                              }
+                            }] : []
+                          };
+                          
+                          if (isFavorite(animalName)) {
+                            removeFromFavorites(animalName);
+                          } else {
+                            addToFavorites(favoriteAnimal as any);
+                          }
+                          // Trigger re-render
+                          setAnimals([...animals]);
+                        }}
+                        className="absolute top-4 left-4 p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-lg z-10"
+                        aria-label={isFavorite(animal.preferred_common_name || animal.name) ? 'Remove from favorites' : 'Add to favorites'}
+                        title={isFavorite(animal.preferred_common_name || animal.name) ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        {isFavorite(animal.preferred_common_name || animal.name) ? (
+                          <svg
+                            className="w-5 h-5 text-yellow-500 fill-current"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="w-5 h-5 text-gray-400 hover:text-yellow-500 transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                      
                       {animal.rank && (
                         <div className="absolute top-4 right-4 px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full capitalize">
                           {animal.rank}
@@ -285,40 +429,27 @@ export default function Wildlife() {
                   </div>
                 ))}
               </div>
-            )}
-
-            {/* Pagination Controls */}
-            {!loading && filteredAnimals.length > 0 && (
-              <div className="mt-8 flex items-center justify-center gap-4">
-                <button
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Previous
-                </button>
-
-                <div className="px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                  <span className="text-gray-900 dark:text-white font-medium">
-                    Page {currentPage}
-                  </span>
-                </div>
-
-                <button
-                  onClick={handleNextPage}
-                  disabled={!hasMore}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  Next
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            )}
+              
+              {/* Pagination */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                  if (!searchQuery.trim() && page > allAnimals.length / PER_PAGE) {
+                    // Need to load more data
+                    loadAnimalsByType();
+                  }
+                }}
+                itemsPerPage={PER_PAGE}
+                totalItems={searchQuery.trim()
+                  ? (hasMore ? currentPage * PER_PAGE : animals.length)
+                  : displayAnimals.length}
+                showingStart={(currentPage - 1) * PER_PAGE + 1}
+                showingEnd={Math.min(currentPage * PER_PAGE, displayAnimals.length)}
+              />
+            </>
+          )}
           </div>
         </div>
       </section>

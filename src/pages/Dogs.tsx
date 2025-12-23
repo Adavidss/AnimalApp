@@ -4,6 +4,8 @@ import { getAllDogBreeds, searchDogBreeds, DogBreed } from '../api/theDogApi';
 import { getCategoryTheme } from '../utils/categories';
 import Loader from '../components/Loader';
 import { EmptyState } from '../components/ErrorState';
+import { addToFavorites, removeFromFavorites, isFavorite } from '../utils/favorites';
+import Pagination from '../components/Pagination';
 
 export default function Dogs() {
   const [breeds, setBreeds] = useState<DogBreed[]>([]);
@@ -11,6 +13,8 @@ export default function Dogs() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const categoryTheme = getCategoryTheme('dogs');
 
@@ -53,7 +57,14 @@ export default function Dogs() {
     }
 
     setFilteredBreeds(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
   };
+
+  const totalPages = Math.ceil(filteredBreeds.length / itemsPerPage);
+  const paginatedBreeds = filteredBreeds.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const getRandomBreed = () => {
     if (filteredBreeds.length > 0) {
@@ -196,20 +207,21 @@ export default function Dogs() {
                 }
               />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredBreeds.map((breed) => (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {paginatedBreeds.map((breed) => (
                   <div
                     key={breed.id}
                     id={`breed-${breed.id}`}
                     className="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:scale-105"
                   >
                     {/* Image */}
-                    <div className="relative h-64 bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                    <div className="relative h-64 bg-gray-200 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
                       {breed.image?.url ? (
                         <img
                           src={breed.image.url}
                           alt={breed.name}
-                          className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-300"
+                          className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                             e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center text-6xl">🐕</div>';
@@ -220,6 +232,62 @@ export default function Dogs() {
                           🐕
                         </div>
                       )}
+                      {/* Favorite Button */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const favoriteAnimal = {
+                            id: breed.id.toString(),
+                            name: breed.name,
+                            taxonomy: {
+                              scientific_name: breed.name
+                            },
+                            images: breed.image?.url ? [{
+                              urls: {
+                                small: breed.image.url,
+                                regular: breed.image.url
+                              }
+                            }] : []
+                          };
+                          
+                          if (isFavorite(breed.name)) {
+                            removeFromFavorites(breed.name);
+                          } else {
+                            addToFavorites(favoriteAnimal as any);
+                          }
+                          // Trigger re-render by updating state
+                          setBreeds([...breeds]);
+                        }}
+                        className="absolute top-4 left-4 p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-lg z-10"
+                        aria-label={isFavorite(breed.name) ? 'Remove from favorites' : 'Add to favorites'}
+                        title={isFavorite(breed.name) ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        {isFavorite(breed.name) ? (
+                          <svg
+                            className="w-5 h-5 text-yellow-500 fill-current"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="w-5 h-5 text-gray-400 hover:text-yellow-500 transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                      
                       {/* Breed Group Badge */}
                       {breed.breed_group && (
                         <div className="absolute top-4 right-4 px-3 py-1 bg-orange-600 text-white text-xs font-medium rounded-full">
@@ -230,12 +298,12 @@ export default function Dogs() {
 
                     {/* Content */}
                     <div className="p-6 space-y-3">
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white break-words">
                         {breed.name}
                       </h3>
 
                       {breed.bred_for && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 break-words">
                           <span className="font-semibold">Bred for:</span> {breed.bred_for}
                         </p>
                       )}
@@ -271,7 +339,19 @@ export default function Dogs() {
                     </div>
                   </div>
                 ))}
-              </div>
+                </div>
+                
+                {/* Pagination */}
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={filteredBreeds.length}
+                  showingStart={(currentPage - 1) * itemsPerPage + 1}
+                  showingEnd={Math.min(currentPage * itemsPerPage, filteredBreeds.length)}
+                />
+              </>
             )}
           </div>
         </div>

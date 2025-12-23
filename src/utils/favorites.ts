@@ -1,4 +1,5 @@
 import { EnrichedAnimal } from '../types/animal';
+import { trackFavoriteForAchievements } from './achievements';
 
 /**
  * Favorites management with localStorage
@@ -45,13 +46,17 @@ export function addToFavorites(animal: EnrichedAnimal): boolean {
       id: animal.id,
       name: animal.name,
       scientificName: animal.taxonomy?.scientific_name,
-      imageUrl: animal.images?.[0]?.urls.small,
+      imageUrl: animal.images?.[0]?.urls.small || animal.images?.[0]?.urls.regular || animal.images?.[0]?.urls.thumb,
       category: determineCategory(animal),
       addedAt: Date.now(),
     };
 
     favorites.push(favorite);
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+    
+    // Track for achievements
+    trackFavoriteForAchievements(favorites.length);
+    
     return true;
   } catch (error) {
     console.error('Error adding to favorites:', error);
@@ -72,6 +77,10 @@ export function removeFromFavorites(animalName: string): boolean {
     }
 
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(filtered));
+    
+    // Track for achievements
+    trackFavoriteForAchievements(filtered.length);
+    
     return true;
   } catch (error) {
     console.error('Error removing from favorites:', error);

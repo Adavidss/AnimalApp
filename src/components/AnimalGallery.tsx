@@ -11,19 +11,30 @@ export default function AnimalGallery({ images, animalName }: AnimalGalleryProps
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Debug logging
+  if (import.meta.env.DEV) {
+    console.log('[AnimalGallery] Images:', images, 'Animal:', animalName);
+  }
+
   if (!images || images.length === 0) {
+    if (import.meta.env.DEV) {
+      console.warn('[AnimalGallery] No images found for:', animalName);
+    }
     return (
       <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-12 text-center">
-        <img
-          src={FALLBACK_IMAGE}
-          alt={animalName}
-          className="w-full h-96 object-cover rounded-lg"
-        />
+        <div className="text-gray-500 dark:text-gray-400">
+          <p className="text-lg mb-2">No images available</p>
+          <p className="text-sm">{animalName}</p>
+        </div>
       </div>
     );
   }
 
   const currentImage = images[currentIndex];
+  
+  if (import.meta.env.DEV) {
+    console.log('[AnimalGallery] Current image URLs:', currentImage.urls);
+  }
 
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -41,14 +52,20 @@ export default function AnimalGallery({ images, animalName }: AnimalGalleryProps
     <>
       <div className="space-y-4">
         {/* Main Image */}
-        <div className="relative bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden group">
+        <div className="relative bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden group flex items-center justify-center min-h-96">
           <img
             src={currentImage.urls.regular}
             alt={currentImage.alt_description || animalName}
-            className="w-full h-96 object-cover cursor-pointer"
+            className="max-w-full max-h-96 object-contain cursor-pointer"
+            loading="lazy"
             onClick={() => setIsFullscreen(true)}
             onError={(e) => {
-              (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+              // Try small size if regular fails
+              if (currentImage.urls.small && (e.target as HTMLImageElement).src !== currentImage.urls.small) {
+                (e.target as HTMLImageElement).src = currentImage.urls.small;
+              } else {
+                (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+              }
             }}
           />
 
@@ -128,6 +145,7 @@ export default function AnimalGallery({ images, animalName }: AnimalGalleryProps
                   src={image.urls.thumb}
                   alt={`Thumbnail ${index + 1}`}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
                   }}

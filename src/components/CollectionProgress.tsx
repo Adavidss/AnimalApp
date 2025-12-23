@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   getAchievements,
   getAchievementsByCategory,
@@ -10,13 +10,46 @@ import {
 
 export default function CollectionProgress() {
   const [selectedCategory, setSelectedCategory] = useState<AchievementCategory | 'all'>('all');
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const achievements = selectedCategory === 'all'
-    ? getAchievements()
-    : getAchievementsByCategory(selectedCategory);
+  // Refresh achievements when localStorage changes
+  useEffect(() => {
+    let isMounted = true;
+    let lastRefreshTime = 0;
+    const REFRESH_COOLDOWN = 500; // Prevent too frequent refreshes
+    
+    const handleStorageChange = () => {
+      const now = Date.now();
+      if (isMounted && now - lastRefreshTime > REFRESH_COOLDOWN) {
+        setRefreshKey(prev => prev + 1);
+        lastRefreshTime = now;
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    // Also listen to custom event for same-tab updates
+    window.addEventListener('achievement-updated', handleStorageChange);
+    
+    // Refresh periodically to catch updates (less frequently)
+    const interval = setInterval(handleStorageChange, 5000); // Every 5 seconds instead of 1
+    
+    return () => {
+      isMounted = false;
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('achievement-updated', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
-  const overallProgress = getOverallProgress();
-  const stats = getAchievementStats();
+  // Use refreshKey to force re-evaluation of achievements
+  const achievements = useMemo(() => {
+    return selectedCategory === 'all'
+      ? getAchievements()
+      : getAchievementsByCategory(selectedCategory);
+  }, [selectedCategory, refreshKey]);
+
+  const overallProgress = useMemo(() => getOverallProgress(), [refreshKey]);
+  const stats = useMemo(() => getAchievementStats(), [refreshKey]);
 
   const categories: Array<{ id: AchievementCategory | 'all'; label: string; icon: string }> = [
     { id: 'all', label: 'All', icon: '🌟' },

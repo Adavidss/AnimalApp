@@ -1,16 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { EnrichedAnimal } from '../types/animal';
 import { CONSERVATION_STATUS, FALLBACK_IMAGE } from '../utils/constants';
+import { addToFavorites, removeFromFavorites, isFavorite } from '../utils/favorites';
 
 interface AnimalCardProps {
   animal: EnrichedAnimal;
 }
 
 export default function AnimalCard({ animal }: AnimalCardProps) {
-  const imageUrl = animal.images[0]?.urls.regular || FALLBACK_IMAGE;
+  // Use smaller image size for faster loading in cards
+  const imageUrl = animal.images[0]?.urls.small || animal.images[0]?.urls.regular || FALLBACK_IMAGE;
   const conservationStatus = animal.conservationStatus?.category;
   const status = conservationStatus ? CONSERVATION_STATUS[conservationStatus] : null;
+  const [isInFavorites, setIsInFavorites] = useState(false);
+
+  useEffect(() => {
+    setIsInFavorites(isFavorite(animal.name));
+  }, [animal.name]);
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isInFavorites) {
+      removeFromFavorites(animal.name);
+    } else {
+      addToFavorites(animal);
+    }
+    setIsInFavorites(!isInFavorites);
+  };
 
   return (
     <Link
@@ -18,16 +37,48 @@ export default function AnimalCard({ animal }: AnimalCardProps) {
       className="group bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden animate-fade-in"
     >
       {/* Image */}
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
         <img
           src={imageUrl}
           alt={animal.name}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+          className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
           onError={(e) => {
             (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
           }}
         />
+
+        {/* Favorites button */}
+        <button
+          onClick={handleFavoriteClick}
+          className="absolute top-2 left-2 p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-lg z-10"
+          aria-label={isInFavorites ? 'Remove from favorites' : 'Add to favorites'}
+          title={isInFavorites ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          {isInFavorites ? (
+            <svg
+              className="w-5 h-5 text-yellow-500 fill-current"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          ) : (
+            <svg
+              className="w-5 h-5 text-gray-400 hover:text-yellow-500 transition-colors"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+              />
+            </svg>
+          )}
+        </button>
 
         {/* Conservation status badge */}
         {status && (
@@ -59,34 +110,6 @@ export default function AnimalCard({ animal }: AnimalCardProps) {
             {animal.wikipedia.extract}
           </p>
         )}
-
-        {/* Metadata */}
-        <div className="flex flex-wrap gap-2 pt-2">
-          {animal.characteristics?.habitat && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              {animal.characteristics.habitat}
-            </span>
-          )}
-
-          {animal.characteristics?.diet && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
-              🍽️ {animal.characteristics.diet}
-            </span>
-          )}
-        </div>
       </div>
     </Link>
   );
@@ -97,29 +120,81 @@ export default function AnimalCard({ animal }: AnimalCardProps) {
  */
 export function CompactAnimalCard({ animal }: AnimalCardProps) {
   const imageUrl = animal.images[0]?.urls.small || FALLBACK_IMAGE;
+  const [isInFavorites, setIsInFavorites] = useState(false);
+
+  useEffect(() => {
+    setIsInFavorites(isFavorite(animal.name));
+  }, [animal.name]);
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isInFavorites) {
+      removeFromFavorites(animal.name);
+    } else {
+      addToFavorites(animal);
+    }
+    setIsInFavorites(!isInFavorites);
+  };
 
   return (
-    <Link
-      to={`/animal/${encodeURIComponent(animal.name)}`}
-      className="group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-all"
-    >
-      <img
-        src={imageUrl}
-        alt={animal.name}
-        className="w-16 h-16 rounded-lg object-cover"
-        loading="lazy"
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
-        }}
-      />
-      <div className="flex-1 min-w-0">
-        <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors truncate">
-          {animal.name}
-        </h4>
-        <p className="text-sm text-gray-500 dark:text-gray-400 italic truncate">
-          {animal.taxonomy?.scientific_name || 'Unknown species'}
-        </p>
-      </div>
-    </Link>
+    <div className="group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-all relative">
+      <Link
+        to={`/animal/${encodeURIComponent(animal.name)}`}
+        className="flex items-center gap-3 flex-1 min-w-0"
+      >
+        <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 relative">
+          <img
+            src={imageUrl}
+            alt={animal.name}
+            className="max-w-full max-h-full object-contain rounded-lg"
+            loading="lazy"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+            }}
+          />
+          {/* Favorites button for compact card */}
+          <button
+            onClick={handleFavoriteClick}
+            className="absolute top-0 right-0 p-1 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-md z-10"
+            aria-label={isInFavorites ? 'Remove from favorites' : 'Add to favorites'}
+            title={isInFavorites ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            {isInFavorites ? (
+              <svg
+                className="w-3.5 h-3.5 text-yellow-500 fill-current"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            ) : (
+              <svg
+                className="w-3.5 h-3.5 text-gray-400 hover:text-yellow-500 transition-colors"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                />
+              </svg>
+            )}
+          </button>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors truncate">
+            {animal.name}
+          </h4>
+          <p className="text-sm text-gray-500 dark:text-gray-400 italic truncate">
+            {animal.taxonomy?.scientific_name || 'Unknown species'}
+          </p>
+        </div>
+      </Link>
+    </div>
   );
 }

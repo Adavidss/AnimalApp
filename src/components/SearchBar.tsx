@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getRecentSearches, addToRecentSearches } from '../utils/cache';
+import { getAutocompleteSuggestions } from '../utils/searchHelpers';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -15,6 +16,7 @@ export default function SearchBar({
   const [query, setQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -32,18 +34,32 @@ export default function SearchBar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Update suggestions when query changes
+  useEffect(() => {
+    if (query.trim().length > 0) {
+      const autocompleteResults = getAutocompleteSuggestions(query.trim(), 8);
+      setSuggestions(autocompleteResults);
+    } else {
+      setSuggestions([]);
+    }
+  }, [query]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      addToRecentSearches(query.trim());
+    // Always allow search to be submitted (even if empty, filters might be active)
+    const searchTerm = query.trim();
+    if (searchTerm) {
+      addToRecentSearches(searchTerm);
       setRecentSearches(getRecentSearches());
-      onSearch(query.trim());
-      setShowSuggestions(false);
     }
+    onSearch(searchTerm);
+    setShowSuggestions(false);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
     setQuery(suggestion);
+    addToRecentSearches(suggestion);
+    setRecentSearches(getRecentSearches());
     onSearch(suggestion);
     setShowSuggestions(false);
   };
@@ -100,7 +116,7 @@ export default function SearchBar({
 
           <button
             type="submit"
-            disabled={loading || !query.trim()}
+            disabled={loading}
             className="absolute inset-y-0 right-0 flex items-center px-4 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-r-lg transition-colors"
           >
             {loading ? (
@@ -112,41 +128,85 @@ export default function SearchBar({
         </div>
       </form>
 
-      {/* Recent searches suggestions */}
-      {showSuggestions && recentSearches.length > 0 && (
+      {/* Search suggestions */}
+      {showSuggestions && (suggestions.length > 0 || recentSearches.length > 0) && (
         <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden animate-fade-in">
-          <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              Recent Searches
-            </p>
-          </div>
-
-          <div className="max-h-60 overflow-y-auto">
-            {recentSearches.map((search, index) => (
-              <button
-                key={index}
-                onClick={() => handleSuggestionClick(search)}
-                className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 group"
-              >
-                <svg
-                  className="w-4 h-4 text-gray-400 group-hover:text-primary-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">
-                  {search}
-                </span>
-              </button>
-            ))}
-          </div>
+          {/* Search Suggestions */}
+          {suggestions.length > 0 && (
+            <>
+              <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Suggestions
+                </p>
+              </div>
+              <div className="max-h-60 overflow-y-auto">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 group"
+                  >
+                    <svg
+                      className="w-4 h-4 text-gray-400 group-hover:text-primary-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                      {suggestion}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          
+          {/* Recent searches */}
+          {recentSearches.length > 0 && (
+            <>
+              {suggestions.length > 0 && (
+                <div className="border-t border-gray-200 dark:border-gray-700" />
+              )}
+              <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Recent Searches
+                </p>
+              </div>
+              <div className="max-h-60 overflow-y-auto">
+                {recentSearches.map((search, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(search)}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3 group"
+                  >
+                    <svg
+                      className="w-4 h-4 text-gray-400 group-hover:text-primary-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                      {search}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

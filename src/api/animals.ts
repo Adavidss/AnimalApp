@@ -1,11 +1,15 @@
 import { Animal } from '../types/animal';
 import { API_KEYS, API_URLS, RATE_LIMIT, CACHE_DURATION } from '../utils/constants';
 import { getCache, setCache } from '../utils/cache';
-import { getINatSpeciesByName } from './inaturalist';
+import { getINatSpeciesByName, searchINatSpecies, INatTaxon } from './inaturalist';
+import { searchGBIFByCommonName, GBIFSpecies } from './gbif';
 // FishBase API disabled due to SSL certificate issues
 // import { searchFishSpecies, isFishSpecies } from './fishbase';
-import { searchZooAnimals } from './additionalApis';
+import { getCatBreeds, CatBreed } from './additionalApis';
+// Zoo Animal API disabled due to CORS/404 errors
+// import { searchZooAnimals } from './additionalApis';
 import { searchDogBreeds, isDogBreed } from './theDogApi';
+import { searchByVernacular, WoRMSTaxon } from './worms';
 
 /**
  * Fetch animals by name from API Ninjas with fallback to iNaturalist and FishBase
@@ -31,8 +35,34 @@ export async function fetchAnimalByName(name: string): Promise<Animal[]> {
         const data: Animal[] = await response.json();
 
         if (data && data.length > 0) {
-          setCache(cacheKey, data, CACHE_DURATION.ANIMAL_DATA);
-          return data;
+          // Filter out plants before caching
+          const animalsOnly = data.filter((animal) => {
+            const kingdom = animal.taxonomy?.kingdom?.toLowerCase() || '';
+            const name = animal.name?.toLowerCase() || '';
+            const scientificName = animal.taxonomy?.scientific_name?.toLowerCase() || '';
+            
+            // Exclude plants
+            if (kingdom.includes('plantae') || kingdom.includes('plant')) {
+              return false;
+            }
+            
+            // Exclude common plant names
+            const plantKeywords = [
+              'grass', 'tree', 'flower', 'plant', 'shrub', 'bush', 'moss', 'fern', 'vernal',
+              'beggarticks', 'tick', 'aster', 'composite', 'sunflower', 'thistle', 'dandelion', 'clover',
+              'wheat', 'corn', 'rice', 'barley', 'oat', 'plectranthus', 'woolly'
+            ];
+            if (plantKeywords.some(keyword => name.includes(keyword) || scientificName.includes(keyword))) {
+              return false;
+            }
+            
+            return true;
+          });
+          
+          if (animalsOnly.length > 0) {
+            setCache(cacheKey, animalsOnly, CACHE_DURATION.ANIMAL_DATA);
+            return animalsOnly;
+          }
         }
       } else if (response.status === 429) {
         console.warn('API Ninjas rate limit exceeded, trying fallback APIs');
@@ -44,7 +74,43 @@ export async function fetchAnimalByName(name: string): Promise<Animal[]> {
     }
   }
 
-  // Fallback 1: Try The Dog API for dog breeds (if we have the key)
+  // Fallback 1: Try The Cat API for cat breeds (if we have the key)
+  if (API_KEYS.THE_CAT_API) {
+    try {
+      const allCatBreeds = await getCatBreeds();
+      const matchingCatBreed = allCatBreeds.find(
+        (breed) => breed.name.toLowerCase() === name.toLowerCase()
+      );
+      
+      if (matchingCatBreed) {
+        const animalData: Animal[] = [
+          {
+            name: matchingCatBreed.name,
+            taxonomy: {
+              kingdom: 'Animalia',
+              phylum: 'Chordata',
+              class: 'Mammalia',
+              order: 'Carnivora',
+              family: 'Felidae',
+              genus: 'Felis',
+              scientific_name: 'Felis catus',
+            },
+            locations: matchingCatBreed.origin ? [matchingCatBreed.origin] : [],
+            characteristics: {
+              lifespan: matchingCatBreed.life_span,
+              habitat: matchingCatBreed.temperament || '',
+            },
+          },
+        ];
+        setCache(cacheKey, animalData, CACHE_DURATION.ANIMAL_DATA);
+        return animalData;
+      }
+    } catch (error) {
+      console.error('Error fetching from The Cat API:', error);
+    }
+  }
+
+  // Fallback 2: Try The Dog API for dog breeds (if we have the key)
   if (API_KEYS.THE_DOG_API) {
     try {
       const isDog = await isDogBreed(name);
@@ -80,28 +146,35 @@ export async function fetchAnimalByName(name: string): Promise<Animal[]> {
     }
   }
 
-  // Fallback 3: Try iNaturalist
+  // Fallback 3: Try iNaturalist (already filtered to animals only via iconic_taxa=Animalia)
   try {
     const inatSpecies = await getINatSpeciesByName(name);
     if (inatSpecies) {
-      const animalData: Animal[] = [
-        {
-          name: inatSpecies.preferred_common_name || inatSpecies.name,
-          taxonomy: {
-            kingdom: '',
-            phylum: '',
-            class: '',
-            order: '',
-            family: '',
-            genus: '',
-            scientific_name: inatSpecies.name,
+      // Double-check it's an animal (iNaturalist should already filter, but be safe)
+      const name = (inatSpecies.preferred_common_name || inatSpecies.name).toLowerCase();
+      const scientificName = inatSpecies.name.toLowerCase();
+      const plantKeywords = ['grass', 'tree', 'flower', 'plant', 'shrub', 'bush', 'moss', 'fern', 'vernal', 'plectranthus', 'woolly'];
+      
+      if (!plantKeywords.some(keyword => name.includes(keyword) || scientificName.includes(keyword))) {
+        const animalData: Animal[] = [
+          {
+            name: inatSpecies.preferred_common_name || inatSpecies.name,
+            taxonomy: {
+              kingdom: 'Animalia', // iNaturalist only returns animals
+              phylum: '',
+              class: '',
+              order: '',
+              family: '',
+              genus: '',
+              scientific_name: inatSpecies.name,
+            },
+            locations: [],
+            characteristics: {},
           },
-          locations: [],
-          characteristics: {},
-        },
-      ];
-      setCache(cacheKey, animalData, CACHE_DURATION.ANIMAL_DATA);
-      return animalData;
+        ];
+        setCache(cacheKey, animalData, CACHE_DURATION.ANIMAL_DATA);
+        return animalData;
+      }
     }
   } catch (error) {
     console.error('Error fetching from iNaturalist:', error);
@@ -115,15 +188,249 @@ export async function fetchAnimalByName(name: string): Promise<Animal[]> {
 }
 
 /**
- * Search for multiple animals
+ * Check if an animal result is actually an animal (not a plant)
  */
-export async function searchAnimals(query: string): Promise<Animal[]> {
+function isAnimal(animal: Animal): boolean {
+  // Check kingdom - should be Animalia, not Plantae
+  const kingdom = animal.taxonomy?.kingdom?.toLowerCase() || '';
+  if (kingdom.includes('plantae') || kingdom.includes('plant')) {
+    return false;
+  }
+
+  // Check for common plant indicators in name
+  const name = animal.name?.toLowerCase() || '';
+  const scientificName = animal.taxonomy?.scientific_name?.toLowerCase() || '';
+  const plantKeywords = [
+    'grass', 'tree', 'flower', 'plant', 'shrub', 'bush', 'moss', 'fern',
+    'algae', 'fungus', 'mushroom', 'lichen', 'herb', 'weed', 'vine', 'cactus',
+    'palm', 'oak', 'pine', 'maple', 'birch', 'willow', 'rose', 'lily', 'daisy',
+    'vernal', 'wheat', 'corn', 'rice', 'barley', 'oat', 'beggarticks', 'tick',
+    'aster', 'composite', 'sunflower', 'thistle', 'dandelion', 'clover',
+    'plectranthus', 'woolly'
+  ];
+  
+  if (plantKeywords.some(keyword => name.includes(keyword) || scientificName.includes(keyword))) {
+    return false;
+  }
+
+  // Check class - should be an animal class, not a plant class
+  const animalClass = animal.taxonomy?.class?.toLowerCase() || '';
+  const plantClasses = ['magnoliopsida', 'liliopsida', 'pinopsida', 'lycopodiopsida', 'polypodiopsida', 'asteraceae', 'poaceae'];
+  if (plantClasses.some(plantClass => animalClass.includes(plantClass))) {
+    return false;
+  }
+
+  // Check family - exclude plant families
+  const family = animal.taxonomy?.family?.toLowerCase() || '';
+  const plantFamilies = ['asteraceae', 'poaceae', 'rosaceae', 'fabaceae', 'lamiaceae', 'apiaceae'];
+  if (plantFamilies.some(plantFamily => family.includes(plantFamily))) {
+    return false;
+  }
+
+  // If kingdom is Animalia or empty (might be animal), allow it
+  if (kingdom === 'animalia' || kingdom === '' || kingdom.includes('animal')) {
+    // But still check if it has animal-like characteristics
+    const animalClasses = ['mammalia', 'aves', 'reptilia', 'amphibia', 'actinopterygii', 'chondrichthyes', 'insecta', 'arachnida'];
+    if (animalClass && animalClasses.some(ac => animalClass.includes(ac))) {
+      return true;
+    }
+    // If no class specified but kingdom is animalia, allow it
+    if (kingdom === 'animalia' && animalClass === '') {
+      return true;
+    }
+  }
+
+  // Default: if we can't determine, check if it has animal-like characteristics
+  // Animals typically have classes like Mammalia, Aves, Reptilia, etc.
+  const animalClasses = ['mammalia', 'aves', 'reptilia', 'amphibia', 'actinopterygii', 'chondrichthyes', 'insecta', 'arachnida', 'mollusca', 'annelida'];
+  if (animalClasses.some(ac => animalClass.includes(ac))) {
+    return true;
+  }
+
+  // If we can't determine, be conservative and exclude it
+  return false;
+}
+
+/**
+ * Convert iNaturalist taxon to Animal format
+ */
+function convertINatToAnimal(taxon: INatTaxon): Animal {
+  return {
+    id: taxon.id.toString(),
+    name: taxon.preferred_common_name || taxon.name,
+    taxonomy: {
+      scientific_name: taxon.name,
+      kingdom: 'Animalia',
+      class: taxon.iconic_taxon_name || undefined,
+    },
+    locations: [],
+    characteristics: {},
+  };
+}
+
+/**
+ * Convert GBIF species to Animal format
+ */
+function convertGBIFToAnimal(species: GBIFSpecies): Animal {
+  return {
+    id: species.key.toString(),
+    name: species.vernacularName || species.canonicalName || species.scientificName,
+    taxonomy: {
+      scientific_name: species.scientificName,
+      kingdom: species.kingdom,
+      phylum: species.phylum,
+      class: species.class,
+      order: species.order,
+      family: species.family,
+      genus: species.genus,
+    },
+    locations: [],
+    characteristics: {},
+  };
+}
+
+/**
+ * Convert WoRMS taxon to Animal format
+ */
+function convertWoRMSToAnimal(taxon: WoRMSTaxon): Animal {
+  return {
+    id: taxon.AphiaID?.toString() || taxon.scientificname || '',
+    name: taxon.vernacular || taxon.scientificname || '',
+    taxonomy: {
+      scientific_name: taxon.scientificname || '',
+      kingdom: taxon.kingdom,
+      phylum: taxon.phylum,
+      class: taxon.class,
+      order: taxon.order,
+      family: taxon.family,
+      genus: taxon.genus,
+    },
+    locations: [],
+    characteristics: {},
+  };
+}
+
+/**
+ * Search for multiple animals across ALL APIs
+ */
+export async function searchAnimals(query: string, limit: number = 100): Promise<Animal[]> {
   if (!query.trim()) {
     return [];
   }
 
+  const queryLower = query.toLowerCase();
+  const seenNames = new Set<string>();
+  const allResults: Animal[] = [];
+
+  // Helper to add unique animals
+  const addUniqueAnimal = (animal: Animal) => {
+    const nameKey = animal.name?.toLowerCase() || '';
+    const sciKey = animal.taxonomy?.scientific_name?.toLowerCase() || '';
+    const key = nameKey || sciKey;
+    
+    if (key && !seenNames.has(key) && isAnimal(animal)) {
+      seenNames.add(key);
+      allResults.push(animal);
+    }
+  };
+
   try {
-    return await fetchAnimalByName(query);
+    // Search across multiple APIs in parallel
+    const searchPromises: Promise<any>[] = [];
+
+    // 1. API Ninjas / fetchAnimalByName (includes Dog API, Cat API fallbacks)
+    searchPromises.push(
+      fetchAnimalByName(query).then(results => {
+        results.forEach(addUniqueAnimal);
+      }).catch(err => console.debug('API Ninjas search failed:', err))
+    );
+
+    // 2. iNaturalist API
+    searchPromises.push(
+      searchINatSpecies(query, 1, 30).then(results => {
+        results.forEach(taxon => {
+          const animal = convertINatToAnimal(taxon);
+          addUniqueAnimal(animal);
+        });
+      }).catch(err => console.debug('iNaturalist search failed:', err))
+    );
+
+    // 3. GBIF API
+    searchPromises.push(
+      searchGBIFByCommonName(query).then(results => {
+        results.forEach(species => {
+          const animal = convertGBIFToAnimal(species);
+          addUniqueAnimal(animal);
+        });
+      }).catch(err => console.debug('GBIF search failed:', err))
+    );
+
+    // 4. WoRMS (for marine species)
+    searchPromises.push(
+      searchByVernacular(query).then(results => {
+        results.forEach(taxon => {
+          const animal = convertWoRMSToAnimal(taxon);
+          // Only add if it's an animal (not plant/algae)
+          if (animal.taxonomy?.kingdom?.toLowerCase() === 'animalia') {
+            addUniqueAnimal(animal);
+          }
+        });
+      }).catch(err => console.debug('WoRMS search failed:', err))
+    );
+
+    // 5. Zoo Animal API - Disabled due to CORS/404 errors
+    // searchPromises.push(
+    //   searchZooAnimals(query).then(results => {
+    //     results.forEach(zooAnimal => {
+    //       const animal: Animal = {
+    //         id: zooAnimal.id.toString(),
+    //         name: zooAnimal.name,
+    //         taxonomy: {
+    //           scientific_name: zooAnimal.latin_name,
+    //         },
+    //         locations: [],
+    //         characteristics: {
+    //           habitat: zooAnimal.habitat,
+    //           diet: zooAnimal.diet,
+    //         },
+    //       };
+    //       addUniqueAnimal(animal);
+    //     });
+    //   }).catch(err => console.debug('Zoo Animal API search failed:', err))
+    // );
+
+    // Wait for all searches to complete
+    await Promise.allSettled(searchPromises);
+
+    // Prioritize results that actually match the query in their name
+    const prioritized = allResults.sort((a, b) => {
+      const aName = (a.name || '').toLowerCase();
+      const bName = (b.name || '').toLowerCase();
+      const aSciName = (a.taxonomy?.scientific_name || '').toLowerCase();
+      const bSciName = (b.taxonomy?.scientific_name || '').toLowerCase();
+      
+      // Exact match in name gets highest priority
+      const aExact = aName === queryLower || aSciName === queryLower;
+      const bExact = bName === queryLower || bSciName === queryLower;
+      if (aExact && !bExact) return -1;
+      if (!aExact && bExact) return 1;
+      
+      // Starts with query gets second priority
+      const aStarts = aName.startsWith(queryLower) || aSciName.startsWith(queryLower);
+      const bStarts = bName.startsWith(queryLower) || bSciName.startsWith(queryLower);
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+      
+      // Contains query gets third priority
+      const aContains = aName.includes(queryLower) || aSciName.includes(queryLower);
+      const bContains = bName.includes(queryLower) || bSciName.includes(queryLower);
+      if (aContains && !bContains) return -1;
+      if (!aContains && bContains) return 1;
+      
+      return 0;
+    });
+    
+    return prioritized.slice(0, limit);
   } catch (error) {
     console.error('Error searching animals:', error);
     throw error;
@@ -132,6 +439,7 @@ export async function searchAnimals(query: string): Promise<Animal[]> {
 
 /**
  * Get a random animal using a curated list (Zoo API is deprecated)
+ * Filters out plants to ensure only animals are returned
  */
 export async function getRandomAnimal(): Promise<Animal | null> {
   try {
@@ -167,9 +475,21 @@ export async function getRandomAnimal(): Promise<Animal | null> {
       'Spider', 'Scorpion', 'Ladybug'
     ];
 
-    const randomName = curatedAnimals[Math.floor(Math.random() * curatedAnimals.length)];
-    const animals = await fetchAnimalByName(randomName);
-    return animals.length > 0 ? animals[0] : null;
+    // Try up to 10 times to get a valid animal (not a plant)
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const randomName = curatedAnimals[Math.floor(Math.random() * curatedAnimals.length)];
+      const animals = await fetchAnimalByName(randomName);
+      
+      // Filter out plants
+      const validAnimals = animals.filter(isAnimal);
+      
+      if (validAnimals.length > 0) {
+        return validAnimals[0];
+      }
+    }
+
+    // If all attempts failed, return null
+    return null;
   } catch (error) {
     console.error('Error fetching random animal:', error);
     return null;

@@ -189,21 +189,207 @@ export const allAchievements: Omit<Achievement, 'unlocked' | 'progress'>[] = [
   },
 ];
 
+// Cache for synced data to prevent infinite loops
+let lastSyncTime = 0;
+const SYNC_COOLDOWN = 2000; // Only sync every 2 seconds at most
+
 /**
  * Get all achievements with current progress
  */
 export function getAchievements(): Achievement[] {
   try {
     const data = getAchievementData();
+    
+    // Sync progress from actual data sources (with cooldown to prevent infinite loops)
+    const now = Date.now();
+    if (now - lastSyncTime > SYNC_COOLDOWN) {
+      syncAchievementProgress();
+      lastSyncTime = now;
+    }
 
-    return allAchievements.map((achievement) => ({
-      ...achievement,
-      progress: data[achievement.id]?.progress || 0,
-      unlocked: data[achievement.id]?.unlocked || false,
-    }));
+    return allAchievements.map((achievement) => {
+      const saved = data[achievement.id];
+      return {
+        ...achievement,
+        progress: saved?.progress || 0,
+        unlocked: saved?.unlocked || false,
+      };
+    });
   } catch (error) {
     console.error('Error getting achievements:', error);
     return allAchievements.map((a) => ({ ...a, progress: 0, unlocked: false }));
+  }
+}
+
+/**
+ * Helper to check if achievement data changed
+ */
+function achievementChanged(current: { progress: number; unlocked: boolean } | undefined, newValue: { progress: number; unlocked: boolean }): boolean {
+  if (!current) return true;
+  return current.progress !== newValue.progress || current.unlocked !== newValue.unlocked;
+}
+
+/**
+ * Sync achievement progress from actual data sources
+ */
+function syncAchievementProgress(): void {
+  const data = getAchievementData();
+  let updated = false;
+
+  // Sync viewed animals count
+  try {
+    const viewed: string[] = JSON.parse(localStorage.getItem('achievement_viewed_animals') || '[]');
+    const totalViewed = viewed.length;
+    
+    if (totalViewed > 0) {
+      const updates = {
+        'first_discovery': { progress: Math.min(totalViewed, 1), unlocked: totalViewed >= 1 },
+        'curious_explorer': { progress: totalViewed, unlocked: totalViewed >= 10 },
+        'wildlife_enthusiast': { progress: totalViewed, unlocked: totalViewed >= 25 },
+        'animal_expert': { progress: totalViewed, unlocked: totalViewed >= 50 },
+        'animal_master': { progress: totalViewed, unlocked: totalViewed >= 100 }
+      };
+      
+      Object.entries(updates).forEach(([id, newValue]) => {
+        if (achievementChanged(data[id], newValue)) {
+          data[id] = newValue;
+          updated = true;
+        }
+      });
+    }
+  } catch (e) {
+    // Ignore
+  }
+
+  // Sync favorites count
+  try {
+    const favorites = JSON.parse(localStorage.getItem('animal_atlas_favorites') || '[]');
+    const favoritesCount = favorites.length;
+    
+    if (favoritesCount > 0) {
+      const updates = {
+        'first_favorite': { progress: favoritesCount, unlocked: favoritesCount >= 1 },
+        'collection_starter': { progress: favoritesCount, unlocked: favoritesCount >= 5 },
+        'dedicated_collector': { progress: favoritesCount, unlocked: favoritesCount >= 15 },
+        'master_collector': { progress: favoritesCount, unlocked: favoritesCount >= 30 }
+      };
+      
+      Object.entries(updates).forEach(([id, newValue]) => {
+        if (achievementChanged(data[id], newValue)) {
+          data[id] = newValue;
+          updated = true;
+        }
+      });
+    }
+  } catch (e) {
+    // Ignore
+  }
+
+  // Sync category achievements
+  const categoryMappings = [
+    { key: 'achievement_category_mammalia', achievement: 'mammal_specialist' },
+    { key: 'achievement_category_aves', achievement: 'bird_specialist' },
+    { key: 'achievement_category_reptilia', achievement: 'reptile_specialist' },
+    { key: 'achievement_category_actinopterygii', achievement: 'marine_specialist' },
+    { key: 'achievement_category_insecta', achievement: 'insect_specialist' }
+  ];
+  
+  categoryMappings.forEach(({ key, achievement }) => {
+    const count = parseInt(localStorage.getItem(key) || '0');
+    if (count > 0) {
+      const newValue = { progress: count, unlocked: count >= 10 };
+      if (achievementChanged(data[achievement], newValue)) {
+        data[achievement] = newValue;
+        updated = true;
+      }
+    }
+  });
+
+  // Sync quiz stats
+  try {
+    const quizStats = JSON.parse(localStorage.getItem('animal_atlas_quiz_stats') || '{}');
+    const totalQuizzes = quizStats.totalQuizzes || 0;
+    if (totalQuizzes > 0) {
+      const newValue = { progress: totalQuizzes, unlocked: totalQuizzes >= 10 };
+      if (achievementChanged(data['quiz_master'], newValue)) {
+        data['quiz_master'] = newValue;
+        updated = true;
+      }
+    }
+  } catch (e) {
+    // Ignore
+  }
+
+  // Sync game play count
+  try {
+    let totalGamesPlayed = 0;
+    const gameKeys = [
+      'memory_match_play_count',
+      'sound_match_play_count', 
+      'guess_the_animal_play_count',
+      'size_challenge_play_count',
+      'animal_atlas_playcount_memory_match',
+      'animal_atlas_playcount_sound_match',
+      'animal_atlas_playcount_guess_the_animal',
+      'animal_atlas_playcount_size_challenge'
+    ];
+    gameKeys.forEach(key => {
+      const count = localStorage.getItem(key);
+      if (count) totalGamesPlayed += parseInt(count) || 0;
+    });
+    const quizStats = JSON.parse(localStorage.getItem('animal_atlas_quiz_stats') || '{}');
+    totalGamesPlayed += quizStats.totalQuizzes || 0;
+    
+    if (totalGamesPlayed > 0) {
+      const newValue = { progress: totalGamesPlayed, unlocked: totalGamesPlayed >= 5 };
+      if (achievementChanged(data['game_player'], newValue)) {
+        data['game_player'] = newValue;
+        updated = true;
+      }
+    }
+  } catch (e) {
+    // Ignore
+  }
+
+  // Sync comparisons
+  try {
+    const comparisonCount = parseInt(localStorage.getItem('achievement_comparisons') || '0');
+    if (comparisonCount > 0) {
+      const newValue = { progress: comparisonCount, unlocked: comparisonCount >= 5 };
+      if (achievementChanged(data['comparison_enthusiast'], newValue)) {
+        data['comparison_enthusiast'] = newValue;
+        updated = true;
+      }
+    }
+  } catch (e) {
+    // Ignore
+  }
+
+  // Sync endangered species
+  try {
+    const endangered: string[] = JSON.parse(localStorage.getItem('achievement_endangered_species') || '[]');
+    const endangeredCount = endangered.length;
+    if (endangeredCount > 0) {
+      const newValue = { progress: endangeredCount, unlocked: endangeredCount >= 10 };
+      if (achievementChanged(data['conservation_advocate'], newValue)) {
+        data['conservation_advocate'] = newValue;
+        updated = true;
+      }
+    }
+  } catch (e) {
+    // Ignore
+  }
+
+  // Update ultimate collector based on unlocked count
+  const unlockedCount = Object.values(data).filter(d => d.unlocked).length;
+  const newUltimate = { progress: unlockedCount, unlocked: unlockedCount >= 19 };
+  if (achievementChanged(data['ultimate_collector'], newUltimate)) {
+    data['ultimate_collector'] = newUltimate;
+    updated = true;
+  }
+
+  if (updated) {
+    saveAchievementData(data);
   }
 }
 
@@ -284,37 +470,79 @@ export function updateAchievementProgress(
 /**
  * Track animal view for achievements
  */
-export function trackAnimalViewForAchievements(animalName: string): Achievement[] {
+export function trackAnimalViewForAchievements(animalName: string, animalClass?: string): Achievement[] {
   const newlyUnlocked: Achievement[] = [];
 
   // Update viewed animals count
   const viewedKey = 'achievement_viewed_animals';
   const viewed: string[] = JSON.parse(localStorage.getItem(viewedKey) || '[]');
+  const wasNew = !viewed.includes(animalName);
 
-  if (!viewed.includes(animalName)) {
+  if (wasNew) {
     viewed.push(animalName);
     localStorage.setItem(viewedKey, JSON.stringify(viewed));
 
-    // Update explorer achievements
+    // Update explorer achievements based on total viewed count
     const totalViewed = viewed.length;
-    const unlocked1 = updateAchievementProgress('first_discovery', 0);
-    if (unlocked1) newlyUnlocked.push(unlocked1);
-
-    if (totalViewed >= 10) {
-      const unlocked2 = updateAchievementProgress('curious_explorer', 0);
-      if (unlocked2) newlyUnlocked.push(unlocked2);
+    
+    // Update progress for each achievement (set to actual count, not increment)
+    const data = getAchievementData();
+    
+    // Update all explorer achievements
+    const wasFirstUnlocked = data['first_discovery']?.unlocked || false;
+    const wasCuriousUnlocked = data['curious_explorer']?.unlocked || false;
+    const wasWildlifeUnlocked = data['wildlife_enthusiast']?.unlocked || false;
+    const wasExpertUnlocked = data['animal_expert']?.unlocked || false;
+    const wasMasterUnlocked = data['animal_master']?.unlocked || false;
+    
+    data['first_discovery'] = { progress: totalViewed, unlocked: totalViewed >= 1 };
+    data['curious_explorer'] = { progress: totalViewed, unlocked: totalViewed >= 10 };
+    data['wildlife_enthusiast'] = { progress: totalViewed, unlocked: totalViewed >= 25 };
+    data['animal_expert'] = { progress: totalViewed, unlocked: totalViewed >= 50 };
+    data['animal_master'] = { progress: totalViewed, unlocked: totalViewed >= 100 };
+    
+    // Check for newly unlocked achievements
+    if (!wasFirstUnlocked && totalViewed >= 1) {
+      newlyUnlocked.push({
+        ...allAchievements.find(a => a.id === 'first_discovery')!,
+        progress: totalViewed,
+        unlocked: true
+      });
     }
-    if (totalViewed >= 25) {
-      const unlocked3 = updateAchievementProgress('wildlife_enthusiast', 0);
-      if (unlocked3) newlyUnlocked.push(unlocked3);
+    if (!wasCuriousUnlocked && totalViewed >= 10) {
+      newlyUnlocked.push({
+        ...allAchievements.find(a => a.id === 'curious_explorer')!,
+        progress: totalViewed,
+        unlocked: true
+      });
     }
-    if (totalViewed >= 50) {
-      const unlocked4 = updateAchievementProgress('animal_expert', 0);
-      if (unlocked4) newlyUnlocked.push(unlocked4);
+    if (!wasWildlifeUnlocked && totalViewed >= 25) {
+      newlyUnlocked.push({
+        ...allAchievements.find(a => a.id === 'wildlife_enthusiast')!,
+        progress: totalViewed,
+        unlocked: true
+      });
     }
-    if (totalViewed >= 100) {
-      const unlocked5 = updateAchievementProgress('animal_master', 0);
-      if (unlocked5) newlyUnlocked.push(unlocked5);
+    if (!wasExpertUnlocked && totalViewed >= 50) {
+      newlyUnlocked.push({
+        ...allAchievements.find(a => a.id === 'animal_expert')!,
+        progress: totalViewed,
+        unlocked: true
+      });
+    }
+    if (!wasMasterUnlocked && totalViewed >= 100) {
+      newlyUnlocked.push({
+        ...allAchievements.find(a => a.id === 'animal_master')!,
+        progress: totalViewed,
+        unlocked: true
+      });
+    }
+    
+    saveAchievementData(data);
+    
+    // Track category-specific achievements (specialist)
+    if (animalClass) {
+      trackCategoryView(animalClass.toLowerCase());
     }
   }
 
@@ -322,31 +550,257 @@ export function trackAnimalViewForAchievements(animalName: string): Achievement[
 }
 
 /**
+ * Track endangered species view for conservation achievement
+ */
+export function trackEndangeredSpecies(animalName: string): void {
+  const endangeredKey = 'achievement_endangered_species';
+  const viewed: string[] = JSON.parse(localStorage.getItem(endangeredKey) || '[]');
+  
+  if (!viewed.includes(animalName)) {
+    viewed.push(animalName);
+    localStorage.setItem(endangeredKey, JSON.stringify(viewed));
+    
+    const count = viewed.length;
+    const data = getAchievementData();
+    const wasUnlocked = data['conservation_advocate']?.unlocked || false;
+    data['conservation_advocate'] = { progress: count, unlocked: count >= 10 };
+    
+    if (!wasUnlocked && count >= 10) {
+      saveAchievementData(data);
+    } else {
+      saveAchievementData(data);
+    }
+  }
+}
+
+/**
+ * Track category-specific viewing for specialist achievements
+ */
+function trackCategoryView(animalClass: string): void {
+  // Normalize animal class names
+  const normalizedClass = animalClass.toLowerCase();
+  let categoryKey: string | null = null;
+  let achievementId: string | null = null;
+  
+  // Map animal class to achievement and category key
+  if (normalizedClass === 'mammalia' || normalizedClass.includes('mammal')) {
+    achievementId = 'mammal_specialist';
+    categoryKey = 'achievement_category_mammalia';
+  } else if (normalizedClass === 'aves' || normalizedClass.includes('bird')) {
+    achievementId = 'bird_specialist';
+    categoryKey = 'achievement_category_aves';
+  } else if (normalizedClass === 'reptilia' || normalizedClass.includes('reptile') || normalizedClass === 'amphibia') {
+    achievementId = 'reptile_specialist';
+    categoryKey = 'achievement_category_reptilia';
+  } else if (normalizedClass.includes('fish') || normalizedClass === 'actinopterygii' || normalizedClass === 'chondrichthyes') {
+    achievementId = 'marine_specialist';
+    categoryKey = 'achievement_category_actinopterygii';
+  } else if (normalizedClass === 'insecta' || normalizedClass.includes('insect')) {
+    achievementId = 'insect_specialist';
+    categoryKey = 'achievement_category_insecta';
+  }
+  
+  if (!achievementId || !categoryKey) return;
+  
+  const categoryCount = parseInt(localStorage.getItem(categoryKey) || '0') + 1;
+  localStorage.setItem(categoryKey, categoryCount.toString());
+  
+  const data = getAchievementData();
+  const wasUnlocked = data[achievementId]?.unlocked || false;
+  data[achievementId] = { progress: categoryCount, unlocked: categoryCount >= 10 };
+  
+  saveAchievementData(data);
+}
+
+/**
  * Track favorite animal for achievements
  */
 export function trackFavoriteForAchievements(count: number): Achievement[] {
   const newlyUnlocked: Achievement[] = [];
+  const data = getAchievementData();
 
   // First favorite
-  if (count === 1) {
-    const unlocked = updateAchievementProgress('first_favorite', 0);
-    if (unlocked) newlyUnlocked.push(unlocked);
+  if (count >= 1) {
+    const wasUnlocked = data['first_favorite']?.unlocked || false;
+    data['first_favorite'] = { progress: count, unlocked: count >= 1 };
+    if (!wasUnlocked && count >= 1) {
+      newlyUnlocked.push({
+        ...allAchievements.find(a => a.id === 'first_favorite')!,
+        progress: count,
+        unlocked: true
+      });
+    }
   }
 
   // Collection milestones
   if (count >= 5) {
-    const unlocked = updateAchievementProgress('collection_starter', 0);
-    if (unlocked) newlyUnlocked.push(unlocked);
+    const wasUnlocked = data['collection_starter']?.unlocked || false;
+    data['collection_starter'] = { progress: count, unlocked: true };
+    if (!wasUnlocked) {
+      newlyUnlocked.push({
+        ...allAchievements.find(a => a.id === 'collection_starter')!,
+        progress: count,
+        unlocked: true
+      });
+    }
+  } else {
+    data['collection_starter'] = { progress: count, unlocked: false };
   }
+  
   if (count >= 15) {
-    const unlocked = updateAchievementProgress('dedicated_collector', 0);
-    if (unlocked) newlyUnlocked.push(unlocked);
+    const wasUnlocked = data['dedicated_collector']?.unlocked || false;
+    data['dedicated_collector'] = { progress: count, unlocked: true };
+    if (!wasUnlocked) {
+      newlyUnlocked.push({
+        ...allAchievements.find(a => a.id === 'dedicated_collector')!,
+        progress: count,
+        unlocked: true
+      });
+    }
+  } else {
+    data['dedicated_collector'] = { progress: count, unlocked: false };
   }
+  
   if (count >= 30) {
-    const unlocked = updateAchievementProgress('master_collector', 0);
-    if (unlocked) newlyUnlocked.push(unlocked);
+    const wasUnlocked = data['master_collector']?.unlocked || false;
+    data['master_collector'] = { progress: count, unlocked: true };
+    if (!wasUnlocked) {
+      newlyUnlocked.push({
+        ...allAchievements.find(a => a.id === 'master_collector')!,
+        progress: count,
+        unlocked: true
+      });
+    }
+  } else {
+    data['master_collector'] = { progress: count, unlocked: false };
   }
 
+  saveAchievementData(data);
+  return newlyUnlocked;
+}
+
+/**
+ * Track quiz completion for achievements
+ */
+export function trackQuizCompletion(): Achievement[] {
+  const newlyUnlocked: Achievement[] = [];
+  
+  try {
+    const quizStats = localStorage.getItem('animal_atlas_quiz_stats');
+    if (!quizStats) return newlyUnlocked;
+    
+    const stats = JSON.parse(quizStats);
+    const totalQuizzes = stats.totalQuizzes || 0;
+    
+    if (totalQuizzes >= 10) {
+      const data = getAchievementData();
+      const wasUnlocked = data['quiz_master']?.unlocked || false;
+      data['quiz_master'] = { progress: totalQuizzes, unlocked: true };
+      if (!wasUnlocked) {
+        newlyUnlocked.push({
+          ...allAchievements.find(a => a.id === 'quiz_master')!,
+          progress: totalQuizzes,
+          unlocked: true
+        });
+      }
+      saveAchievementData(data);
+    }
+  } catch (error) {
+    console.error('Error tracking quiz completion:', error);
+  }
+  
+  return newlyUnlocked;
+}
+
+/**
+ * Track game play for achievements
+ */
+export function trackGamePlay(): Achievement[] {
+  const newlyUnlocked: Achievement[] = [];
+  
+  try {
+    // Count total games played across all games
+    let totalGamesPlayed = 0;
+    
+    // Check game stats from localStorage
+    const gameKeys = [
+      'memory_match_play_count',
+      'sound_match_play_count',
+      'guess_the_animal_play_count',
+      'animal_atlas_quiz_stats'
+    ];
+    
+    gameKeys.forEach(key => {
+      try {
+        if (key === 'animal_atlas_quiz_stats') {
+          const stats = localStorage.getItem(key);
+          if (stats) {
+            const parsed = JSON.parse(stats);
+            totalGamesPlayed += parsed.totalQuizzes || 0;
+          }
+        } else {
+          const count = localStorage.getItem(key);
+          if (count) {
+            totalGamesPlayed += parseInt(count) || 0;
+          }
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+    });
+    
+    if (totalGamesPlayed >= 5) {
+      const data = getAchievementData();
+      const wasUnlocked = data['game_player']?.unlocked || false;
+      data['game_player'] = { progress: totalGamesPlayed, unlocked: true };
+      if (!wasUnlocked) {
+        newlyUnlocked.push({
+          ...allAchievements.find(a => a.id === 'game_player')!,
+          progress: totalGamesPlayed,
+          unlocked: true
+        });
+      }
+      saveAchievementData(data);
+    }
+  } catch (error) {
+    console.error('Error tracking game play:', error);
+  }
+  
+  return newlyUnlocked;
+}
+
+/**
+ * Track comparison for achievements
+ */
+export function trackComparison(): Achievement[] {
+  const newlyUnlocked: Achievement[] = [];
+  
+  try {
+    const comparisonKey = 'achievement_comparisons';
+    const comparisonCount = parseInt(localStorage.getItem(comparisonKey) || '0') + 1;
+    localStorage.setItem(comparisonKey, comparisonCount.toString());
+    
+    if (comparisonCount >= 5) {
+      const data = getAchievementData();
+      const wasUnlocked = data['comparison_enthusiast']?.unlocked || false;
+      data['comparison_enthusiast'] = { progress: comparisonCount, unlocked: true };
+      if (!wasUnlocked) {
+        newlyUnlocked.push({
+          ...allAchievements.find(a => a.id === 'comparison_enthusiast')!,
+          progress: comparisonCount,
+          unlocked: true
+        });
+      }
+      saveAchievementData(data);
+    } else {
+      const data = getAchievementData();
+      data['comparison_enthusiast'] = { progress: comparisonCount, unlocked: false };
+      saveAchievementData(data);
+    }
+  } catch (error) {
+    console.error('Error tracking comparison:', error);
+  }
+  
   return newlyUnlocked;
 }
 
@@ -381,9 +835,22 @@ function getAchievementData(): AchievementData {
   }
 }
 
+let lastSavedData: string | null = null;
+
 function saveAchievementData(data: AchievementData): void {
   try {
-    localStorage.setItem('achievement_data', JSON.stringify(data));
+    const dataString = JSON.stringify(data);
+    
+    // Only dispatch event if data actually changed
+    if (dataString !== lastSavedData) {
+      localStorage.setItem('achievement_data', dataString);
+      lastSavedData = dataString;
+      // Dispatch event to notify components of achievement updates
+      // Use setTimeout to prevent immediate re-triggering
+      setTimeout(() => {
+        window.dispatchEvent(new Event('achievement-updated'));
+      }, 100);
+    }
   } catch (error) {
     console.error('Error saving achievement data:', error);
   }

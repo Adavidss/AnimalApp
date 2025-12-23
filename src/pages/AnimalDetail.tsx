@@ -5,18 +5,17 @@ import AnimalGallery from '../components/AnimalGallery';
 import MapView from '../components/MapView';
 import SoundPlayer from '../components/SoundPlayer';
 import MigrationMap from '../components/MigrationMap';
-import BirdSightings from '../components/BirdSightings';
-import MarineInfo from '../components/MarineInfo';
-import FactCard from '../components/FactCard';
 import SizeVisualization from '../components/SizeVisualization';
 import Loader, { SkeletonDetail } from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import { fetchAnimalByName } from '../api/animals';
 import { CONSERVATION_STATUS } from '../utils/constants';
 import { EnrichedAnimal } from '../types/animal';
-import { getFactsByAnimal, getRandomFact, AnimalFact } from '../data/animalFacts';
 import { trackAnimalView } from '../utils/animalDiscovery';
-import { trackAnimalViewForAchievements } from '../utils/achievements';
+import { trackAnimalViewForAchievements, trackEndangeredSpecies } from '../utils/achievements';
+import { isEndangered } from '../api/iucn';
+import { addToFavorites, removeFromFavorites, isFavorite } from '../utils/favorites';
+import { getHabitatTypes } from '../api/worms';
 
 export default function AnimalDetail() {
   const { name } = useParams<{ name: string }>();
@@ -25,8 +24,14 @@ export default function AnimalDetail() {
   const [animal, setAnimal] = useState<EnrichedAnimal | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'taxonomy' | 'habitat' | 'conservation' | 'sounds' | 'migration' | 'sightings' | 'marine'>('overview');
-  const [currentFact, setCurrentFact] = useState<AnimalFact | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'taxonomy' | 'habitat' | 'conservation' | 'sounds' | 'migration'>('overview');
+  const [isAnimalFavorite, setIsAnimalFavorite] = useState(false);
+
+  useEffect(() => {
+    if (animal) {
+      setIsAnimalFavorite(isFavorite(animal.name));
+    }
+  }, [animal]);
 
   useEffect(() => {
     if (name) {
@@ -34,23 +39,40 @@ export default function AnimalDetail() {
     }
   }, [name]);
 
-  // Load random fact when animal changes
+  // Ensure activeTab exists in available tabs, switch to first available if not
   useEffect(() => {
-    if (animal) {
-      shuffleFact();
+    if (!animal) return;
+    
+    const conservationStatus = animal.conservationStatus?.category;
+    const status = conservationStatus ? CONSERVATION_STATUS[conservationStatus] : null;
+    
+    const availableTabs = [
+      { 
+        id: 'overview', 
+        show: (animal.wikipedia?.extract) || 
+              (animal.characteristics && Object.entries(animal.characteristics).filter(([key, value]) => value && value !== 'N/A').length > 0)
+      },
+      { 
+        id: 'taxonomy', 
+        show: animal.taxonomy && (animal.taxonomy.kingdom || animal.taxonomy.phylum || animal.taxonomy.class || animal.taxonomy.order || animal.taxonomy.family || animal.taxonomy.genus || animal.taxonomy.scientific_name)
+      },
+      { 
+        id: 'habitat', 
+        show: (animal.occurrences && animal.occurrences.length > 0) || (animal.locations && animal.locations.length > 0)
+      },
+      { 
+        id: 'conservation', 
+        show: status || (animal.conservationStatus && animal.conservationStatus.category)
+      },
+      { id: 'sounds', show: animal.sounds && animal.sounds.length > 0 },
+      { id: 'migration', show: animal.migration && animal.migration.length > 0 },
+    ].filter(tab => tab.show !== false);
+    
+    // If current active tab is not in available tabs, switch to first available
+    if (availableTabs.length > 0 && !availableTabs.find(t => t.id === activeTab)) {
+      setActiveTab(availableTabs[0].id as any);
     }
-  }, [animal?.name]);
-
-  const shuffleFact = () => {
-    if (animal) {
-      const facts = getFactsByAnimal(animal.name);
-      if (facts.length > 0) {
-        setCurrentFact(facts[Math.floor(Math.random() * facts.length)]);
-      } else {
-        setCurrentFact(getRandomFact());
-      }
-    }
-  };
+  }, [animal, activeTab]);
 
   const loadAnimal = async (animalName: string) => {
     setLoading(true);
@@ -84,7 +106,12 @@ export default function AnimalDetail() {
 
         // Track animal view for trending statistics and achievements
         trackAnimalView(baseAnimal.name);
-        trackAnimalViewForAchievements(baseAnimal.name);
+        trackAnimalViewForAchievements(baseAnimal.name, baseAnimal.taxonomy?.class);
+        
+        // Track endangered species for conservation achievement
+        if (enrichedAnimal.conservationStatus && isEndangered(enrichedAnimal.conservationStatus)) {
+          trackEndangeredSpecies(enrichedAnimal.name);
+        }
       } else {
         setError('Failed to load animal details');
       }
@@ -149,9 +176,37 @@ export default function AnimalDetail() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                  {animal.name}
-                </h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                    {animal.name}
+                  </h1>
+                  {/* Favorite Button */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (isAnimalFavorite) {
+                        removeFromFavorites(animal.name);
+                        setIsAnimalFavorite(false);
+                      } else {
+                        addToFavorites(animal);
+                        setIsAnimalFavorite(true);
+                      }
+                    }}
+                    className="p-2 bg-white dark:bg-gray-800 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-lg"
+                    aria-label={isAnimalFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                    title={isAnimalFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                  >
+                    {isAnimalFavorite ? (
+                      <svg className="w-6 h-6 text-yellow-500 fill-current" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6 text-gray-400 hover:text-yellow-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
                 {animal.taxonomy?.scientific_name && (
                   <p className="text-xl italic text-gray-600 dark:text-gray-400">
                     {animal.taxonomy.scientific_name}
@@ -215,13 +270,6 @@ export default function AnimalDetail() {
             <AnimalGallery images={animal.images} animalName={animal.name} />
           </div>
 
-          {/* Fun Facts */}
-          {currentFact && (
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Fun Fact</h2>
-              <FactCard fact={currentFact} onShuffle={shuffleFact} showAnimal={false} />
-            </div>
-          )}
 
           {/* Size Visualization */}
           {(animal.characteristics?.length || animal.characteristics?.height || animal.characteristics?.weight) && (
@@ -240,14 +288,33 @@ export default function AnimalDetail() {
             <div className="border-b border-gray-200 dark:border-gray-700">
               <nav className="flex -mb-px overflow-x-auto">
                 {[
-                  { id: 'overview', label: 'Overview', icon: '📖' },
-                  { id: 'taxonomy', label: 'Taxonomy', icon: '🔬' },
-                  { id: 'habitat', label: 'Habitat & Range', icon: '🌍' },
-                  { id: 'conservation', label: 'Conservation', icon: '🛡️' },
+                  { 
+                    id: 'overview', 
+                    label: 'Overview', 
+                    icon: '📖',
+                    show: (animal.wikipedia?.extract) || 
+                          (animal.characteristics && Object.entries(animal.characteristics).filter(([key, value]) => value && value !== 'N/A').length > 0)
+                  },
+                  { 
+                    id: 'taxonomy', 
+                    label: 'Taxonomy', 
+                    icon: '🔬',
+                    show: animal.taxonomy && (animal.taxonomy.kingdom || animal.taxonomy.phylum || animal.taxonomy.class || animal.taxonomy.order || animal.taxonomy.family || animal.taxonomy.genus || animal.taxonomy.scientific_name)
+                  },
+                  { 
+                    id: 'habitat', 
+                    label: 'Habitat & Range', 
+                    icon: '🌍',
+                    show: (animal.occurrences && animal.occurrences.length > 0) || (animal.locations && animal.locations.length > 0)
+                  },
+      { 
+        id: 'conservation', 
+        label: 'Conservation', 
+        icon: '🛡️',
+        show: status || (animal.conservationStatus && animal.conservationStatus.category)
+      },
                   { id: 'sounds', label: 'Sounds', icon: '🔊', show: animal.sounds && animal.sounds.length > 0 },
                   { id: 'migration', label: 'Migration', icon: '🗺️', show: animal.migration && animal.migration.length > 0 },
-                  { id: 'sightings', label: 'Bird Sightings', icon: '🦅', show: animal.birdSightings && animal.birdSightings.length > 0 },
-                  { id: 'marine', label: 'Marine Info', icon: '🌊', show: animal.marineData },
                 ].filter(tab => tab.show !== false).map((tab) => (
                   <button
                     key={tab.id}
@@ -298,8 +365,8 @@ export default function AnimalDetail() {
                     </div>
                   )}
 
-                  {/* Characteristics */}
-                  {animal.characteristics && (
+                  {/* Characteristics - only show if there are characteristics */}
+                  {animal.characteristics && Object.entries(animal.characteristics).filter(([key, value]) => value && value !== 'N/A').length > 0 && (
                     <div>
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                         Characteristics
@@ -326,15 +393,122 @@ export default function AnimalDetail() {
                 </div>
               )}
 
-              {/* Taxonomy Tab */}
+              {/* Taxonomy Tab - only show if taxonomy data exists */}
               {activeTab === 'taxonomy' && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    Taxonomic Classification
-                  </h3>
-                  <div className="space-y-3">
-                    {animal.taxonomy && (
-                      <>
+                  {animal.taxonomy && (animal.taxonomy.kingdom || animal.taxonomy.phylum || animal.taxonomy.class || animal.taxonomy.order || animal.taxonomy.family || animal.taxonomy.genus || animal.taxonomy.scientific_name || animal.marineData) ? (
+                    <>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                        Taxonomic Classification
+                      </h3>
+                      
+                      {/* Marine habitat info and taxonomic details */}
+                      {animal.marineData && (() => {
+                        const habitats = getHabitatTypes(animal.marineData);
+                        const hasHabitats = habitats.length > 0;
+                        const marineTaxon = animal.marineData;
+                        const hasMarineTaxonomy = marineTaxon.kingdom || marineTaxon.phylum || marineTaxon.class || 
+                                                 marineTaxon.order || marineTaxon.family || marineTaxon.genus || 
+                                                 marineTaxon.rank || marineTaxon.status;
+                        
+                        if (!hasHabitats && !hasMarineTaxonomy) return null;
+                        
+                        return (
+                          <div className="mb-6 space-y-4">
+                            {/* Habitat Types */}
+                            {hasHabitats && (
+                              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                <div className="flex flex-wrap gap-2 items-center">
+                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Habitat Type:</span>
+                                  {habitats.map((habitat) => (
+                                    <span
+                                      key={habitat}
+                                      className="px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium"
+                                    >
+                                      {habitat}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Marine Taxonomic Details (if different from main taxonomy or if main taxonomy is missing) */}
+                            {hasMarineTaxonomy && (
+                              <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                                  Marine Taxonomy Details
+                                </h4>
+                                <div className="space-y-2">
+                                  {marineTaxon.kingdom && (
+                                    <div className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-600">
+                                      <span className="text-gray-600 dark:text-gray-400">Kingdom:</span>
+                                      <span className="font-medium text-gray-900 dark:text-white">{marineTaxon.kingdom}</span>
+                                    </div>
+                                  )}
+                                  {marineTaxon.phylum && (
+                                    <div className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-600">
+                                      <span className="text-gray-600 dark:text-gray-400">Phylum:</span>
+                                      <span className="font-medium text-gray-900 dark:text-white">{marineTaxon.phylum}</span>
+                                    </div>
+                                  )}
+                                  {marineTaxon.class && (
+                                    <div className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-600">
+                                      <span className="text-gray-600 dark:text-gray-400">Class:</span>
+                                      <span className="font-medium text-gray-900 dark:text-white">{marineTaxon.class}</span>
+                                    </div>
+                                  )}
+                                  {marineTaxon.order && (
+                                    <div className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-600">
+                                      <span className="text-gray-600 dark:text-gray-400">Order:</span>
+                                      <span className="font-medium text-gray-900 dark:text-white">{marineTaxon.order}</span>
+                                    </div>
+                                  )}
+                                  {marineTaxon.family && (
+                                    <div className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-600">
+                                      <span className="text-gray-600 dark:text-gray-400">Family:</span>
+                                      <span className="font-medium text-gray-900 dark:text-white">{marineTaxon.family}</span>
+                                    </div>
+                                  )}
+                                  {marineTaxon.genus && (
+                                    <div className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-600">
+                                      <span className="text-gray-600 dark:text-gray-400">Genus:</span>
+                                      <span className="font-medium text-gray-900 dark:text-white">{marineTaxon.genus}</span>
+                                    </div>
+                                  )}
+                                  {marineTaxon.rank && (
+                                    <div className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-600">
+                                      <span className="text-gray-600 dark:text-gray-400">Rank:</span>
+                                      <span className="font-medium text-gray-900 dark:text-white capitalize">{marineTaxon.rank}</span>
+                                    </div>
+                                  )}
+                                  {marineTaxon.status && (
+                                    <div className="flex justify-between py-1">
+                                      <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                                      <span className={`font-medium ${marineTaxon.status === 'accepted' ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                                        {marineTaxon.status}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {marineTaxon.scientificname && (
+                                    <div className="flex justify-between py-1 border-t border-gray-200 dark:border-gray-600 mt-2 pt-2">
+                                      <span className="text-gray-600 dark:text-gray-400">Scientific Name:</span>
+                                      <span className="font-medium text-gray-900 dark:text-white italic">{marineTaxon.scientificname}</span>
+                                    </div>
+                                  )}
+                                  {marineTaxon.authority && (
+                                    <div className="flex justify-between py-1">
+                                      <span className="text-gray-600 dark:text-gray-400">Authority:</span>
+                                      <span className="font-medium text-gray-900 dark:text-white text-sm">{marineTaxon.authority}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      
+                      <div className="space-y-3">
                         {animal.taxonomy.kingdom && (
                           <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                             <div className="w-32 text-gray-600 dark:text-gray-400 font-medium">
@@ -395,97 +569,97 @@ export default function AnimalDetail() {
                             </div>
                           </div>
                         )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Habitat Tab */}
-              {activeTab === 'habitat' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                      Geographic Distribution
-                    </h3>
-                    {animal.occurrences && animal.occurrences.length > 0 ? (
-                      <MapView occurrences={animal.occurrences} animalName={animal.name} />
-                    ) : (
-                      <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-12 text-center">
-                        <p className="text-gray-600 dark:text-gray-400">
-                          Geographic data not available
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {animal.locations && animal.locations.length > 0 && (
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                        Known Locations
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {animal.locations.map((location, index) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 rounded-full text-sm"
-                          >
-                            {location}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Conservation Tab */}
-              {activeTab === 'conservation' && (
-                <div className="space-y-6">
-                  {status ? (
-                    <>
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                          Conservation Status
-                        </h3>
-                        <div className={`${status.bgColor} ${status.color} rounded-lg p-6`}>
-                          <div className="flex items-center gap-4 mb-4">
-                            <div className="text-4xl">🛡️</div>
-                            <div>
-                              <div className="text-2xl font-bold">{status.label}</div>
-                              <div className="text-sm opacity-90">{status.description}</div>
+                        {animal.taxonomy.scientific_name && (
+                          <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div className="w-32 text-gray-600 dark:text-gray-400 font-medium">
+                              Scientific Name
+                            </div>
+                            <div className="flex-1 text-gray-900 dark:text-white font-semibold italic">
+                              {animal.taxonomy.scientific_name}
                             </div>
                           </div>
-
-                          {animal.conservationStatus?.population_trend && (
-                            <div className="mt-4 pt-4 border-t border-current/20">
-                              <p>
-                                <strong>Population Trend:</strong>{' '}
-                                {animal.conservationStatus.population_trend}
-                              </p>
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
+                    </>
+                  ) : null}
+                </div>
+              )}
 
-                      {animal.characteristics?.biggest_threat && (
+              {/* Habitat Tab - only show if habitat data exists */}
+              {activeTab === 'habitat' && (
+                <div className="space-y-6">
+                  {(animal.occurrences && animal.occurrences.length > 0) || (animal.locations && animal.locations.length > 0) ? (
+                    <>
+                      {animal.occurrences && animal.occurrences.length > 0 && (
                         <div>
                           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                            Threats
+                            Geographic Distribution
                           </h3>
-                          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                            <p className="text-red-900 dark:text-red-100">
-                              {animal.characteristics.biggest_threat}
-                            </p>
+                          <MapView occurrences={animal.occurrences} animalName={animal.name} />
+                        </div>
+                      )}
+
+                      {animal.locations && animal.locations.length > 0 && (
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                            Known Locations
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                            {animal.locations.map((location, index) => (
+                              <span
+                                key={index}
+                                className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 rounded-full text-sm"
+                              >
+                                {location}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       )}
                     </>
-                  ) : (
-                    <div className="text-center py-12">
-                      <p className="text-gray-600 dark:text-gray-400">
-                        Conservation status information not available
-                      </p>
+                  ) : null}
+                </div>
+              )}
+
+              {/* Conservation Tab - only show if conservation data exists */}
+              {activeTab === 'conservation' && (status || animal.conservationStatus?.category) && (
+                <div className="space-y-6">
+                  {status && (
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                        Conservation Status
+                      </h3>
+                      <div className={`${status.bgColor} ${status.color} rounded-lg p-6`}>
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="text-4xl">🛡️</div>
+                          <div>
+                            <div className="text-2xl font-bold">{status.label}</div>
+                            <div className="text-sm opacity-90">{status.description}</div>
+                          </div>
+                        </div>
+
+                        {animal.conservationStatus?.population_trend && (
+                          <div className="mt-4 pt-4 border-t border-current/20">
+                            <p>
+                              <strong>Population Trend:</strong>{' '}
+                              {animal.conservationStatus.population_trend}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {animal.characteristics?.biggest_threat && (
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                        Threats
+                      </h3>
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                        <p className="text-red-900 dark:text-red-100">
+                          {animal.characteristics.biggest_threat}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -515,32 +689,7 @@ export default function AnimalDetail() {
                 </div>
               )}
 
-              {/* Bird Sightings Tab */}
-              {activeTab === 'sightings' && animal.birdSightings && (
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    Recent Bird Sightings
-                  </h3>
-                  <BirdSightings
-                    observations={animal.birdSightings}
-                    speciesName={animal.name}
-                  />
-                </div>
-              )}
 
-              {/* Marine Info Tab */}
-              {activeTab === 'marine' && animal.marineData && (
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    Marine Taxonomy & Distribution
-                  </h3>
-                  <MarineInfo
-                    taxon={animal.marineData}
-                    distribution={animal.marineDistribution || []}
-                    vernacularNames={animal.marineVernacular || []}
-                  />
-                </div>
-              )}
             </div>
           </div>
         </div>
