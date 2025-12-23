@@ -1,0 +1,1231 @@
+ANIMAL ATLAS - EMBEDDABLE GAMES RESOURCE DOCUMENT
+==================================================
+Last Updated: 2025-12-19
+Version: 1.0
+
+This document contains a curated list of free, embeddable animal-themed games
+that can be integrated into the Animal Atlas web application. All games listed
+are mobile-friendly and use HTML5/JavaScript technologies.
+
+==================================================
+TABLE OF CONTENTS
+==================================================
+1. MEMORY & MATCHING GAMES
+2. QUIZ & TRIVIA GAMES
+3. EDUCATIONAL GAMES
+4. PUZZLE GAMES
+5. ARCADE-STYLE GAMES
+6. GAME EMBEDDING PLATFORMS
+7. OPEN SOURCE GAME REPOSITORIES
+8. IMPLEMENTATION GUIDES
+9. LICENSING & USAGE NOTES
+
+
+==================================================
+1. MEMORY & MATCHING GAMES
+==================================================
+
+-----------------
+GAME 1: H5P MEMORY GAME
+-----------------
+WHAT IT IS:
+A professional, customizable memory card matching game where you can add your own animal images and optional text. Players flip cards to find matching pairs.
+
+FEATURES:
+- Fully customizable with your own images
+- Mobile-responsive
+- Professional design
+- Multiple difficulty levels possible
+- Timer and score tracking
+- Works on all devices
+
+HOW TO IMPLEMENT:
+1. Visit H5P Memory Game content type
+2. Create account (free)
+3. Upload your animal images
+4. Customize settings (number of cards, etc.)
+5. Get embed code or direct link
+6. Paste iframe code into your React component
+
+IMPLEMENTATION DIFFICULTY: ⭐ Easy (No coding required)
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Free to use, embed, or insert into LMS
+
+RESOURCE LINK:
+https://h5p.org/memory-game
+
+EMBED CODE EXAMPLE:
+<iframe src="https://h5p.org/h5p/embed/[YOUR_GAME_ID]"
+        width="100%"
+        height="600"
+        frameborder="0"
+        allowfullscreen="allowfullscreen">
+</iframe>
+
+
+-----------------
+GAME 2: MATCHIMALS.FUN (OPEN SOURCE)
+-----------------
+WHAT IT IS:
+A beautiful animal matching puzzle card game specifically designed for kids of all ages. Features cute animal illustrations, colors, and numbers to improve pattern recognition skills.
+
+FEATURES:
+- Turn-based game mechanics
+- Adorable animal illustrations
+- Educational (pattern recognition)
+- Built with React Native Web (works on web and mobile)
+- Clean, kid-friendly interface
+- Open source - fully customizable
+
+HOW TO IMPLEMENT:
+OPTION 1 (Easy - Use Hosted Version):
+1. Contact developer for hosted embed link
+2. Add iframe to your app
+
+OPTION 2 (Advanced - Self-Host):
+1. Clone GitHub repository
+2. npm install dependencies
+3. Customize animals/design
+4. Build for web
+5. Host on your server
+6. Embed as iframe or integrate directly into React app
+
+IMPLEMENTATION DIFFICULTY:
+- Embed: ⭐ Easy
+- Self-host: ⭐⭐⭐ Moderate (requires React knowledge)
+
+MOBILE FRIENDLY: ✅ Yes (built with React Native Web)
+LICENSE: Open Source (check repo for specific license)
+
+RESOURCE LINK:
+https://github.com/igravitystudios/matchimals.fun
+
+TECH STACK: React Native, React Native Web, boardgame.io
+CODE LANGUAGE: JavaScript (89.8%), CSS (9.3%)
+
+
+-----------------
+GAME 3: ANIMALS MEMORY HTML5 GAME (CONSTRUCT 3)
+-----------------
+WHAT IT IS:
+A complete animal memory game with 10 levels of increasing difficulty. Made with Construct 3, fully playable in browser.
+
+FEATURES:
+- 10 levels with progressive difficulty
+- Animal-themed cards
+- Timer and score system
+- Touch and mouse controls
+- Colorful graphics
+- Sound effects (can be muted)
+
+HOW TO IMPLEMENT:
+1. Visit the game on Construct.net
+2. Contact Construct.net for embed permissions
+3. OR create similar game using Construct 3 free version
+4. Export as HTML5
+5. Host files and embed
+
+IMPLEMENTATION DIFFICULTY: ⭐⭐ Moderate
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Check with Construct.net
+
+RESOURCE LINK:
+https://www.construct.net/en/free-online-games/animals-memory-html5-game-24557/play
+
+NOTE: You may need to create your own version using Construct 3 (free tier available)
+
+
+-----------------
+GAME 4: SIMPLE MEMORY GAME (CODEPEN)
+-----------------
+WHAT IT IS:
+A minimalist, open-source memory card game built with vanilla JavaScript, HTML, and CSS. Perfect for customization with animal images.
+
+FEATURES:
+- Clean, simple code
+- Easy to modify
+- No framework dependencies
+- Lightweight
+- Customizable images and colors
+
+HOW TO IMPLEMENT:
+1. Visit CodePen link
+2. Fork the pen
+3. Replace card images with animal photos
+4. Customize colors to match Animal Atlas theme
+5. Export code
+6. Integrate into React component or use as iframe
+
+IMPLEMENTATION DIFFICULTY: ⭐⭐ Easy-Moderate (basic HTML/CSS/JS knowledge)
+MOBILE FRIENDLY: ✅ Yes (with CSS adjustments)
+LICENSE: Open source (MIT or similar)
+
+RESOURCE LINK:
+https://codepen.io/riclab/pen/rzyVWO
+
+ALTERNATIVE MEMORY GAME:
+https://github.com/mmenavas/memory-game
+(Pure HTML5, CSS3, JavaScript - no frameworks)
+
+
+-----------------
+GAME 5: ANIMAL MATCHING CARD GAME 2
+-----------------
+WHAT IT IS:
+Open source matching card game with 12 animal cards laid out in 4x3 grid. Players click to flip and match pairs.
+
+FEATURES:
+- 12 cards (6 pairs)
+- Flip animation
+- Match detection
+- Move counter
+- Simple, clean design
+- Easy to customize
+
+HOW TO IMPLEMENT:
+1. Clone from GitHub
+2. Replace animal images with your own
+3. Customize styling
+4. Build and host
+5. Embed or integrate directly
+
+IMPLEMENTATION DIFFICULTY: ⭐⭐ Moderate
+MOBILE FRIENDLY: ✅ Yes (responsive design)
+LICENSE: Open source
+
+RESOURCE LINK:
+https://github.com/terencecistudent/matching-cards-project
+
+CODE: JavaScript (65.7%), HTML (19.3%), CSS (15.0%)
+
+
+==================================================
+2. QUIZ & TRIVIA GAMES
+==================================================
+
+-----------------
+GAME 6: ANIMAL QUIZ GAME (HTML5GAMES.COM)
+-----------------
+WHAT IT IS:
+A comprehensive animal quiz with 300+ levels where players look at animal pictures and guess names from scrambled letters.
+
+FEATURES:
+- 300+ animal levels
+- Picture-based identification
+- Letter scramble gameplay
+- Progressive difficulty
+- Touch-friendly interface
+- Colorful graphics
+
+HOW TO IMPLEMENT:
+OPTION 1 (Preferred):
+1. Contact HTML5Games.com for embed code
+2. May require keeping their branding/ads
+3. Insert iframe into your app
+
+OPTION 2 (Alternative):
+Build similar quiz using open source quiz frameworks (see below)
+
+IMPLEMENTATION DIFFICULTY: ⭐ Easy (if embeddable)
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Check with HTML5Games.com (may require attribution)
+
+RESOURCE LINK:
+https://html5games.com/Game/Animal-Quiz/a5db53c9-e8fe-47c5-aba3-8148d460a4f3
+
+
+-----------------
+GAME 7: BUILD YOUR OWN QUIZ (GOOGLE HTML-QUIZ)
+-----------------
+WHAT IT IS:
+Google's open source stand-alone HTML+JavaScript quiz script. Customizable for animal trivia.
+
+FEATURES:
+- Simple to set up
+- Two-player/team support
+- Question timer
+- Score tracking
+- Fully customizable questions
+- No external dependencies
+
+HOW TO IMPLEMENT:
+1. Clone Google's html-quiz repository
+2. Create JSON file with animal questions
+3. Customize styling to match your theme
+4. Add to your React app as component
+5. OR host separately and embed
+
+IMPLEMENTATION DIFFICULTY: ⭐⭐⭐ Moderate
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Open source (Apache 2.0)
+
+RESOURCE LINK:
+https://github.com/google/html-quiz
+
+EXAMPLE QUESTION FORMAT:
+{
+  "question": "What is the fastest land animal?",
+  "answers": ["Cheetah", "Lion", "Gazelle", "Horse"],
+  "correct": 0,
+  "image": "cheetah.jpg"
+}
+
+
+-----------------
+GAME 8: JAVASCRIPT QUIZ APP (JAMES Q QUICK)
+-----------------
+WHAT IT IS:
+A modern, well-documented quiz application built with vanilla HTML, CSS, and JavaScript. Can load questions from API or JSON file.
+
+FEATURES:
+- Clean, modern UI
+- High score tracking
+- Multiple choice questions
+- Progress bar
+- Can fetch questions from API
+- LocalStorage for scores
+- Fully customizable
+
+HOW TO IMPLEMENT:
+1. Clone repository from GitHub
+2. Create animal questions JSON file
+3. Modify to load your questions
+4. Style to match Animal Atlas
+5. Build and integrate into React app
+
+IMPLEMENTATION DIFFICULTY: ⭐⭐⭐ Moderate
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Open source (MIT)
+
+RESOURCE LINK:
+https://github.com/jamesqquick/Build-A-Quiz-App-With-HTML-CSS-and-JavaScript
+
+TUTORIAL AVAILABLE: Yes (YouTube video included)
+
+
+-----------------
+GAME 9: SIMPLE JAVASCRIPT QUIZ (CODEPEN)
+-----------------
+WHAT IT IS:
+Ready-to-use quiz game examples on CodePen that you can fork and customize.
+
+FEATURES:
+- Live preview
+- Editable code
+- Multiple examples
+- Simple implementation
+- Easy to understand
+
+HOW TO IMPLEMENT:
+1. Browse CodePen quiz games
+2. Find one that fits your needs
+3. Fork and customize with animal questions
+4. Export code
+5. Integrate into your app
+
+IMPLEMENTATION DIFFICULTY: ⭐⭐ Easy-Moderate
+MOBILE FRIENDLY: ✅ Yes (most examples)
+LICENSE: Varies (check each pen)
+
+RESOURCE LINK:
+https://codepen.io/Markodevelopment/pen/zaZamX
+
+TUTORIAL RESOURCES:
+https://www.sitepoint.com/simple-javascript-quiz/
+https://simplestepscode.com/javascript-quiz-tutorial/
+
+
+==================================================
+3. EDUCATIONAL GAMES
+==================================================
+
+-----------------
+GAME 10: INTERACTIVE ANIMAL FLOWCHART
+-----------------
+WHAT IT IS:
+A JavaScript HTML5 applet where students can click on animals to initiate a flowchart animation showing animal classification.
+
+FEATURES:
+- Educational classification system
+- Interactive flowchart
+- Visual learning
+- Click-to-learn interface
+- Taxonomy education
+- Animal grouping demonstration
+
+HOW TO IMPLEMENT:
+1. Access from Open Educational Resources @ Singapore
+2. Review licensing (CC BY-SA 4.0)
+3. Download or embed
+4. Integrate into educational section
+
+IMPLEMENTATION DIFFICULTY: ⭐⭐ Moderate
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Creative Commons Attribution-Share Alike 4.0 Singapore License
+
+RESOURCE LINK:
+https://sg.iwant2study.org/ospsg/index.php/interactive-resources/biology/1039-interactive-animal-flowchart-2021-javascript-html5-applet
+
+CREATOR: Shaun Quek
+USE CASE: Perfect for educational/taxonomy section of Animal Atlas
+
+
+-----------------
+GAME 11: GUESS THE ANIMAL (OPEN SOURCE)
+-----------------
+WHAT IT IS:
+A classic "20 Questions" style game where the computer learns about animals through yes/no questions. Originally from BASIC, rewritten in JavaScript.
+
+FEATURES:
+- AI learning component
+- Yes/No question format
+- Grows knowledge base over time
+- Educational about animal characteristics
+- Nostalgic gameplay
+
+HOW TO IMPLEMENT:
+1. Clone from GitHub (multiple language versions)
+2. Use JavaScript version
+3. Customize starting animal database
+4. Style to match your design
+5. Integrate as React component
+
+IMPLEMENTATION DIFFICULTY: ⭐⭐⭐ Moderate
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Open source
+
+RESOURCE LINK:
+https://github.com/drom/animal
+
+CODE AVAILABLE IN: JavaScript, Ruby, Python, Go, C++
+
+
+-----------------
+GAME 12: EDUCATIONAL HTML GAMES - ANIMALS VERSION
+-----------------
+WHAT IT IS:
+Simple educational game showing animals walking past, helping teach number concepts. Each game is one self-contained HTML file.
+
+FEATURES:
+- Single-file implementation
+- No external dependencies
+- Educational focus
+- Simple graphics
+- Number counting practice
+- Very lightweight
+
+HOW TO IMPLEMENT:
+1. Download from GitHub repository
+2. Open HTML file to preview
+3. Customize animals and settings if needed
+4. Host file on your server
+5. Embed in iframe OR extract code into React component
+
+IMPLEMENTATION DIFFICULTY: ⭐ Very Easy
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: CC-BY (Creative Commons Attribution)
+
+RESOURCE LINK:
+https://github.com/jkanev/educational-html-games
+
+PERFECT FOR: Kids section, counting games, simple interactions
+
+
+==================================================
+4. PUZZLE GAMES
+==================================================
+
+-----------------
+GAME 13: SNAKE GAME (ANIMAL THEMED)
+-----------------
+WHAT IT IS:
+Classic snake game that can be themed with animals. Multiple open source versions available in React and vanilla JavaScript.
+
+FEATURES:
+- Keyboard controls (arrow keys, WASD)
+- Touch controls for mobile
+- Score tracking
+- Increasing difficulty
+- Can be themed with animal graphics
+
+HOW TO IMPLEMENT (REACT VERSION):
+1. Use React-based snake game from GitHub
+2. Customize with animal theme (snake eating animals)
+3. Add to your app as component
+4. Style to match design
+
+IMPLEMENTATION DIFFICULTY: ⭐⭐⭐ Moderate
+MOBILE FRIENDLY: ✅ Yes (with touch controls)
+LICENSE: Open source (MIT)
+
+RESOURCE LINKS:
+https://github.com/MaelDrapier/react-simple-snake
+https://github.com/keyurparalkar/snake-game (TypeScript version)
+https://codepen.io/jackrugile/pen/bGRWbK (CSS renderer version)
+
+TUTORIAL: https://dev.to/menard_codes/i-built-a-snake-game-in-react-48b6
+
+
+==================================================
+5. ARCADE-STYLE GAMES
+==================================================
+
+-----------------
+GAME 14: ITCH.IO HTML5 ANIMAL GAMES
+-----------------
+WHAT IT IS:
+Itch.io hosts thousands of HTML5 games, including 3,351+ web games tagged with "Animals". Many allow embedding.
+
+POPULAR ANIMAL GAMES:
+- KittyToy
+- NOM NOM
+- Capybara Village
+- Ducklings
+- Peckin' Pixels
+
+FEATURES (vary by game):
+- Professional quality
+- Various genres
+- High replay value
+- Many are free
+- Some offer embed options
+
+HOW TO IMPLEMENT:
+1. Browse itch.io/games/html5/tag-animals
+2. Find suitable game
+3. Check if embed is allowed
+4. Contact developer if needed
+5. Use itch.io embed widget OR
+6. Get permission for direct embed
+
+IMPLEMENTATION DIFFICULTY: ⭐⭐ Easy-Moderate (depends on game)
+MOBILE FRIENDLY: ✅ Most are mobile-friendly
+LICENSE: Varies by game (check individual licenses)
+
+RESOURCE LINKS:
+https://itch.io/games/html5/tag-animals
+https://itch.io/docs/creators/widget (embed documentation)
+https://itch.io/docs/creators/html5 (upload your own)
+
+EMBED WIDGET EXAMPLE:
+<iframe src="https://itch.io/embed/[GAME_ID]"
+        width="552"
+        height="167"
+        frameborder="0">
+</iframe>
+
+NOTE: Some games may require revenue sharing or attribution
+
+
+==================================================
+6. GAME EMBEDDING PLATFORMS
+==================================================
+
+-----------------
+PLATFORM 1: PLAYPAGER
+-----------------
+WHAT IT IS:
+A platform offering free embeddable HTML5 games with no ads. Simple copy-paste embed codes.
+
+FEATURES:
+- No ads in games
+- No pop-up ads
+- Responsive to screen size
+- Easy embed codes
+- Free to use
+- Mobile-friendly
+
+ANIMAL GAMES AVAILABLE:
+Search for animal-related games in their catalog
+
+HOW TO IMPLEMENT:
+1. Visit PlayPager.com/embed-games
+2. Browse available games
+3. Find animal-themed options
+4. Copy iframe code
+5. Paste into your React app
+
+IMPLEMENTATION DIFFICULTY: ⭐ Very Easy
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Free for non-commercial use (verify current terms)
+
+RESOURCE LINK:
+https://playpager.com/embed-games/
+
+
+-----------------
+PLATFORM 2: 1000WEBGAMES
+-----------------
+WHAT IT IS:
+Platform offering free HTML5 games for websites, playable on desktop and mobile.
+
+FEATURES:
+- Embed code or iframe provided
+- Can download game files
+- Thumbnail images included
+- Desktop and mobile support
+- Large game library
+
+HOW TO IMPLEMENT:
+1. Browse 1000webgames.com
+2. Search for animal games
+3. Copy embed code OR download files
+4. Insert into your website
+5. Optionally host yourself
+
+IMPLEMENTATION DIFFICULTY: ⭐ Very Easy
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Check terms (may require attribution/ads)
+
+RESOURCE LINK:
+https://1000webgames.com/free-games-for-your-website.php
+
+
+-----------------
+PLATFORM 3: HTMLGAMES.COM
+-----------------
+WHAT IT IS:
+Platform with free HTML5 games that work on iOS, Android, and PC/Mac. Games can be embedded for free.
+
+FEATURES:
+- Cross-platform compatibility
+- Embed button on each game
+- Large selection
+- Regular updates
+- Mobile optimized
+
+HOW TO IMPLEMENT:
+1. Visit HTMLGames.com
+2. Find animal-themed games
+3. Click "Embed" button
+4. Copy HTML code
+5. Paste into your app
+(Note: Must keep their ads and game intact)
+
+IMPLEMENTATION DIFFICULTY: ⭐ Very Easy
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Free with attribution/ads
+
+RESOURCE LINK:
+https://www.htmlgames.com/html5-games-for-your-site/
+
+
+-----------------
+PLATFORM 4: HTML5GAMESHQ
+-----------------
+WHAT IT IS:
+Index of free HTML5 games, all embeddable with provided codes.
+
+FEATURES:
+- Each game has embed code
+- Wide variety
+- Regular updates
+- Mobile compatible
+
+HOW TO IMPLEMENT:
+1. Browse HTML5GamesHQ.com
+2. Check each game page
+3. Copy specific embed code
+4. Insert into your site
+
+IMPLEMENTATION DIFFICULTY: ⭐ Very Easy
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Varies by game
+
+RESOURCE LINK:
+https://html5gameshq.com/
+
+
+-----------------
+PLATFORM 5: IDEV GAMES
+-----------------
+WHAT IT IS:
+Platform offering easy-to-embed browser-based HTML5 and Unity games.
+
+FEATURES:
+- Easy embed codes
+- Resizes for all devices
+- Cross-platform compatible
+- Professional quality games
+
+HOW TO IMPLEMENT:
+1. Visit iDev.games
+2. Browse free games
+3. Get embed code
+4. Add to your website
+
+IMPLEMENTATION DIFFICULTY: ⭐ Very Easy
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Check individual games
+
+RESOURCE LINK:
+https://idev.games/free-html5-games-for-your-website
+
+
+==================================================
+7. OPEN SOURCE GAME REPOSITORIES
+==================================================
+
+-----------------
+REPOSITORY 1: GITHUB TOPICS - JAVASCRIPT GAMES
+-----------------
+WHAT IT IS:
+GitHub's curated collection of JavaScript game repositories.
+
+SEARCH TOPICS:
+- javascript-game
+- html5-game
+- animals (with JavaScript filter)
+- educational-game
+- memory-matching-game
+- quiz-game
+- card-game
+- kids-game
+
+HOW TO USE:
+1. Visit GitHub topics
+2. Filter by language (JavaScript/TypeScript)
+3. Sort by stars/updated
+4. Find suitable animal games
+5. Clone and customize
+
+RESOURCE LINKS:
+https://github.com/topics/javascript-game
+https://github.com/topics/animals?l=javascript
+https://github.com/topics/educational-game?l=javascript
+https://github.com/topics/memory-matching-game
+
+
+-----------------
+REPOSITORY 2: REACT EDUCATIONAL GAMES
+-----------------
+WHAT IT IS:
+Fast, Fun, Interactive and Social Educational Games for the Classroom - built with React.
+
+FEATURES:
+- Built with React (easy to integrate)
+- Educational focus
+- Classroom-tested
+- Open source
+
+HOW TO IMPLEMENT:
+1. Clone repository
+2. Customize for animal themes
+3. Integrate directly into your React app
+4. No iframe needed
+
+IMPLEMENTATION DIFFICULTY: ⭐⭐⭐ Moderate (React knowledge needed)
+MOBILE FRIENDLY: ✅ Yes
+LICENSE: Open source
+
+RESOURCE LINK:
+https://github.com/asm-products/react-educational-games
+
+
+-----------------
+REPOSITORY 3: AWESOME EDUCATIONAL GAMES
+-----------------
+WHAT IT IS:
+Curated list of awesome educational games to learn programming and other skills.
+
+USE FOR:
+- Finding more game ideas
+- Reference implementations
+- Learning resources
+
+RESOURCE LINK:
+https://github.com/yrgo/awesome-educational-games
+
+
+==================================================
+8. IMPLEMENTATION GUIDES
+==================================================
+
+-----------------
+GUIDE 1: BASIC IFRAME EMBEDDING
+-----------------
+
+STANDARD IFRAME CODE:
+```html
+<iframe
+  src="[GAME_URL]"
+  width="100%"
+  height="600px"
+  frameborder="0"
+  allowfullscreen
+  title="Animal Game"
+  loading="lazy"
+  sandbox="allow-scripts allow-same-origin"
+></iframe>
+```
+
+REACT COMPONENT EXAMPLE:
+```jsx
+import React from 'react';
+
+export function AnimalGame({ gameUrl, title }) {
+  return (
+    <div className="game-container">
+      <iframe
+        src={gameUrl}
+        width="100%"
+        height="600px"
+        frameBorder="0"
+        allowFullScreen
+        title={title}
+        loading="lazy"
+        className="animal-game-iframe"
+      />
+    </div>
+  );
+}
+```
+
+RESPONSIVE IFRAME:
+```css
+.game-container {
+  position: relative;
+  padding-bottom: 75%; /* 4:3 Aspect Ratio */
+  height: 0;
+  overflow: hidden;
+}
+
+.game-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+```
+
+
+-----------------
+GUIDE 2: EMBEDDING IN REACT
+-----------------
+
+METHOD 1: Simple Iframe Component
+```jsx
+// components/GameEmbed.tsx
+interface GameEmbedProps {
+  gameUrl: string;
+  title: string;
+  aspectRatio?: string;
+}
+
+export const GameEmbed: React.FC<GameEmbedProps> = ({
+  gameUrl,
+  title,
+  aspectRatio = "75%"
+}) => {
+  return (
+    <div style={{ paddingBottom: aspectRatio, position: 'relative', height: 0 }}>
+      <iframe
+        src={gameUrl}
+        title={title}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          border: 'none'
+        }}
+        allowFullScreen
+      />
+    </div>
+  );
+};
+```
+
+METHOD 2: Self-Hosted Game Component
+```jsx
+// For games you host yourself
+import { useEffect, useRef } from 'react';
+
+export const SelfHostedGame: React.FC = () => {
+  const gameRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Initialize game in the div
+    if (gameRef.current) {
+      // Your game initialization code here
+    }
+  }, []);
+
+  return <div ref={gameRef} className="game-canvas" />;
+};
+```
+
+
+-----------------
+GUIDE 3: MOBILE OPTIMIZATION
+-----------------
+
+ENSURE MOBILE COMPATIBILITY:
+1. Use responsive iframe wrapper
+2. Test touch controls
+3. Add viewport meta tag
+4. Use CSS media queries
+5. Test on actual devices
+
+VIEWPORT META TAG:
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+```
+
+MOBILE-FRIENDLY STYLES:
+```css
+@media (max-width: 768px) {
+  .game-container {
+    padding-bottom: 100%; /* Taller on mobile */
+  }
+
+  .game-controls {
+    font-size: 1.2rem; /* Larger touch targets */
+  }
+}
+```
+
+
+-----------------
+GUIDE 4: PERFORMANCE OPTIMIZATION
+-----------------
+
+LAZY LOADING:
+```jsx
+import { lazy, Suspense } from 'react';
+
+const AnimalGame = lazy(() => import('./components/AnimalGame'));
+
+function GamesPage() {
+  return (
+    <Suspense fallback={<div>Loading game...</div>}>
+      <AnimalGame />
+    </Suspense>
+  );
+}
+```
+
+IFRAME LAZY LOADING:
+```html
+<iframe src="game.html" loading="lazy"></iframe>
+```
+
+ONLY LOAD WHEN VISIBLE:
+```jsx
+import { useInView } from 'react-intersection-observer';
+
+export const LazyGame = () => {
+  const { ref, inView } = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  return (
+    <div ref={ref}>
+      {inView ? <iframe src="game.html" /> : <div>Scroll to load game...</div>}
+    </div>
+  );
+};
+```
+
+
+==================================================
+9. LICENSING & USAGE NOTES
+==================================================
+
+IMPORTANT CONSIDERATIONS:
+-------------------------
+
+1. ATTRIBUTION REQUIREMENTS
+   - Many free games require attribution
+   - Keep developer credits visible
+   - Link back to original source
+   - Read license terms carefully
+
+2. COMMERCIAL USE
+   - Verify if commercial use is allowed
+   - Some games are personal/educational use only
+   - Contact developers for commercial licensing
+   - Consider paid licenses for ad-free versions
+
+3. MODIFICATIONS
+   - Check if modifications are allowed
+   - Some licenses require sharing changes
+   - Open source doesn't always mean "do anything"
+   - Respect CC licenses (BY, SA, NC, ND variations)
+
+4. ADS & BRANDING
+   - Some embedded games include ads
+   - May require keeping platform branding
+   - Check if you can white-label
+   - Consider user experience with ads
+
+5. HOSTING
+   - Some games must be embedded (can't self-host)
+   - Others allow downloading and hosting
+   - Check bandwidth/traffic limits
+   - Consider CDN for self-hosted games
+
+6. SUPPORT & UPDATES
+   - Embedded games may break if source changes
+   - Self-hosted games need manual updates
+   - Check if games are actively maintained
+   - Have fallback if game becomes unavailable
+
+
+COMMON LICENSES:
+---------------
+
+MIT LICENSE:
+- ✅ Commercial use allowed
+- ✅ Modification allowed
+- ✅ Distribution allowed
+- ⚠️ Include license and copyright notice
+
+CREATIVE COMMONS (CC BY):
+- ✅ Share and adapt
+- ⚠️ Must give attribution
+- ✅ Commercial use allowed
+
+CREATIVE COMMONS (CC BY-SA):
+- ✅ Share and adapt
+- ⚠️ Must give attribution
+- ⚠️ Must share under same license
+
+CREATIVE COMMONS (CC BY-NC):
+- ✅ Share and adapt
+- ⚠️ Must give attribution
+- ❌ No commercial use
+
+APACHE 2.0:
+- ✅ Commercial use allowed
+- ✅ Modification allowed
+- ✅ Patent grant
+- ⚠️ Include license and notice
+
+
+BEFORE IMPLEMENTING:
+-------------------
+
+1. ✅ Read license/terms of use
+2. ✅ Test on mobile devices
+3. ✅ Check loading speed
+4. ✅ Verify it works in iframe
+5. ✅ Test accessibility
+6. ✅ Check for security issues
+7. ✅ Verify no malicious code
+8. ✅ Test on different browsers
+9. ✅ Check if HTTPS required
+10. ✅ Document any attribution requirements
+
+
+==================================================
+RECOMMENDED QUICK START GAMES
+==================================================
+
+FOR IMMEDIATE IMPLEMENTATION:
+------------------------------
+
+1. EASIEST - H5P MEMORY GAME
+   - No coding required
+   - Professional quality
+   - Free to use
+   - Upload animal images and done
+   - Link: https://h5p.org/memory-game
+
+2. BEST OPEN SOURCE - MATCHIMALS.FUN
+   - Beautiful design
+   - Kid-friendly
+   - React-based (integrates well)
+   - Link: https://github.com/igravitystudios/matchimals.fun
+
+3. MOST EDUCATIONAL - INTERACTIVE ANIMAL FLOWCHART
+   - Teaches classification
+   - Interactive learning
+   - CC licensed
+   - Link: https://sg.iwant2study.org/ospsg/index.php/interactive-resources/biology/1039-interactive-animal-flowchart-2021-javascript-html5-applet
+
+4. QUICK QUIZ - GOOGLE HTML-QUIZ
+   - Simple setup
+   - Customizable
+   - Open source
+   - Link: https://github.com/google/html-quiz
+
+5. PLATFORM EMBED - PLAYPAGER
+   - No coding needed
+   - No ads
+   - Copy-paste solution
+   - Link: https://playpager.com/embed-games/
+
+
+==================================================
+CUSTOM GAME DEVELOPMENT RESOURCES
+==================================================
+
+If you want to build custom animal games from scratch:
+
+GAME ENGINES/LIBRARIES:
+-----------------------
+
+1. KAPLAY.js (formerly Kaboom.js)
+   - JavaScript/TypeScript game library
+   - Easy to learn
+   - Great documentation
+   - Link: https://kaplayjs.com/
+
+2. PHASER
+   - Popular HTML5 game framework
+   - Large community
+   - Many examples
+   - Link: https://phaser.io/
+
+3. PIXI.JS
+   - 2D rendering engine
+   - Very fast
+   - WebGL support
+   - Link: https://pixijs.com/
+
+4. BOARDGAME.IO
+   - Turn-based games
+   - React integration
+   - Used by Matchimals
+   - Link: https://boardgame.io/
+
+
+TUTORIALS FOR BUILDING GAMES:
+-----------------------------
+
+1. JavaScript Quiz Tutorial
+   https://www.sitepoint.com/simple-javascript-quiz/
+
+2. Memory Game Tutorial
+   https://www.freecodecamp.org/news/vanilla-javascript-tutorial-build-a-memory-game-in-30-minutes-e542c4447eae/
+
+3. React Game Tutorial
+   https://react.dev/learn/tutorial-tic-tac-toe
+
+4. Build Snake Game in React
+   https://dev.to/menard_codes/i-built-a-snake-game-in-react-48b6
+
+
+==================================================
+NEXT STEPS
+==================================================
+
+IMPLEMENTATION ROADMAP:
+----------------------
+
+PHASE 1: Quick Wins (Week 1)
+1. Add H5P Memory Game (animals)
+2. Embed a quiz from PlayPager or similar
+3. Test on mobile devices
+4. Add games page to navigation
+
+PHASE 2: Custom Integration (Week 2-3)
+1. Fork Matchimals or similar open source game
+2. Customize with Animal Atlas branding
+3. Self-host for full control
+4. Integrate directly into React app
+
+PHASE 3: Original Games (Month 2+)
+1. Build simple quiz using animal data
+2. Create "Name that Animal" game
+3. Build animal sound matching game
+4. Create classification challenge
+
+PHASE 4: Advanced Games (Month 3+)
+1. AR animal viewing game
+2. Animal habitat matching
+3. Food chain puzzle
+4. Evolution timeline game
+
+
+GAMES SECTION STRUCTURE:
+------------------------
+
+Suggested page layout in Animal Atlas:
+
+/games
+  /memory-match
+  /quiz
+  /puzzle
+  /educational
+  /arcade
+
+Each game should have:
+- Title and description
+- Difficulty level
+- Estimated play time
+- Educational value
+- Mobile-friendly indicator
+- Link to related animals
+
+
+==================================================
+SOURCES & REFERENCES
+==================================================
+
+PLATFORMS:
+- H5P: https://h5p.org/memory-game
+- PlayPager: https://playpager.com/embed-games/
+- 1000WebGames: https://1000webgames.com/free-games-for-your-website.php
+- HTMLGames: https://www.htmlgames.com/html5-games-for-your-site/
+- HTML5GamesHQ: https://html5gameshq.com/
+- iDev Games: https://idev.games/free-html5-games-for-your-website
+- Itch.io: https://itch.io/games/html5/tag-animals
+
+OPEN SOURCE REPOSITORIES:
+- Matchimals: https://github.com/igravitystudios/matchimals.fun
+- Google Quiz: https://github.com/google/html-quiz
+- Memory Game: https://github.com/mmenavas/memory-game
+- Animal Matching: https://github.com/terencecistudent/matching-cards-project
+- Educational Games: https://github.com/jkanev/educational-html-games
+- Guess Animal: https://github.com/drom/animal
+- React Quiz: https://github.com/jamesqquick/Build-A-Quiz-App-With-HTML-CSS-and-JavaScript
+- React Snake: https://github.com/MaelDrapier/react-simple-snake
+
+EDUCATIONAL:
+- Interactive Flowchart: https://sg.iwant2study.org/ospsg/index.php/interactive-resources/biology/1039-interactive-animal-flowchart-2021-javascript-html5-applet
+
+TUTORIALS:
+- SitePoint Quiz: https://www.sitepoint.com/simple-javascript-quiz/
+- Simple Steps Code: https://simplestepscode.com/javascript-quiz-tutorial/
+- React Snake Tutorial: https://dev.to/menard_codes/i-built-a-snake-game-in-react-48b6
+
+CODEPEN EXAMPLES:
+- Memory Game: https://codepen.io/riclab/pen/rzyVWO
+- Quiz Game: https://codepen.io/Markodevelopment/pen/zaZamX
+- Snake Game: https://codepen.io/jackrugile/pen/bGRWbK
+- CSS Animals: https://codepen.io/ashleynolan/pen/mdxBpZ
+
+DOCUMENTATION:
+- Itch.io Embed: https://itch.io/docs/creators/widget
+- Itch.io HTML5: https://itch.io/docs/creators/html5
+- Gamezop Embed Guide: https://business.gamezop.com/blog/how-to-embed-html5-games-in-website
+
+
+==================================================
+VERSION HISTORY
+==================================================
+
+v1.0 - 2025-12-19
+- Initial comprehensive games resource document
+- 14+ specific games catalogued
+- 5+ embedding platforms listed
+- Implementation guides included
+- Licensing notes added
+- Mobile optimization tips provided
+- Quick start recommendations
+- Complete source links for all resources
+
+==================================================
+END OF DOCUMENT
+==================================================
+
+Remember to verify licenses and test all games before implementing!
+Always check current terms of service as they may change.
+Test thoroughly on mobile devices before deploying.
+
+For questions or suggestions, document updates can be requested.
