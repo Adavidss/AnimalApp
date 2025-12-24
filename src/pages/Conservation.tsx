@@ -38,7 +38,7 @@ export default function Conservation() {
       ];
 
       // Search for animals - limit to avoid crashes
-      const allResults: EnrichedAnimal[] = [];
+      let allResults: EnrichedAnimal[] = [];
       const seenNames = new Set<string>();
 
       // Only load 10 animals at a time based on page
@@ -46,35 +46,22 @@ export default function Conservation() {
       const endIndex = startIndex + PER_PAGE;
       const queriesToProcess = endangeredExamples.slice(startIndex, endIndex);
 
-      // Add delay between API calls to avoid rate limiting
-      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-      for (let i = 0; i < queriesToProcess.length; i++) {
-        const query = queriesToProcess[i];
+      // Process animals in parallel for faster loading, but limit concurrent requests
+      const processAnimal = async (query: string): Promise<EnrichedAnimal[]> => {
+        const results: EnrichedAnimal[] = [];
         try {
-          // Add delay between requests (except first one)
-          if (i > 0) {
-            await delay(500); // 500ms delay between requests
-          }
-
-          const results = await searchAnimals(query);
-          for (const animal of results) {
+          const searchResults = await searchAnimals(query);
+          for (const animal of searchResults) {
             if (!seenNames.has(animal.name)) {
               seenNames.add(animal.name);
               
-              // Skip enrichment for conservation page to avoid too many API calls
-              // Just get conservation status directly if available
+              // Get conservation status in parallel with animal search
               let conservationStatus = null;
               if (animal.taxonomy?.scientific_name) {
                 try {
-                  // Small delay before IUCN call
-                  await delay(300);
-                  const status = await fetchIUCNStatus(animal.taxonomy.scientific_name);
-                  if (status) {
-                    conservationStatus = status;
-                  }
+                  conservationStatus = await fetchIUCNStatus(animal.taxonomy.scientific_name);
                 } catch (err) {
-                  // Continue without status
+                  // Continue without status - don't block
                   console.debug(`Could not fetch IUCN status for ${animal.name}`);
                 }
               }
@@ -82,9 +69,7 @@ export default function Conservation() {
               // Filter by selected status
               if (selectedStatus === 'all' || 
                   (conservationStatus && conservationStatus.category === selectedStatus)) {
-                // Skip enrichment to avoid too many API calls - just use basic animal data
-                // Users can click through to see full details
-                allResults.push({
+                results.push({
                   id: (animal as any).id || animal.name,
                   name: animal.name,
                   taxonomy: animal.taxonomy,
@@ -98,15 +83,29 @@ export default function Conservation() {
             }
           }
         } catch (err: any) {
-          // Silently handle errors - don't block loading
+          // Silently handle errors
           if (err?.message?.includes('429') || err?.message?.includes('rate limit')) {
-            console.warn(`Rate limited for ${query}, skipping...`);
-            // Continue with next animal
-            continue;
+            console.debug(`Rate limited for ${query}`);
           }
-          console.debug(`Error searching for ${query}:`, err);
+        }
+        return results;
+      };
+
+      // Process in batches of 3 to avoid overwhelming APIs
+      const batchSize = 3;
+      for (let i = 0; i < queriesToProcess.length; i += batchSize) {
+        const batch = queriesToProcess.slice(i, i + batchSize);
+        const batchResults = await Promise.all(batch.map(processAnimal));
+        allResults.push(...batchResults.flat());
+        
+        // Stop if we have enough results
+        if (allResults.length >= PER_PAGE) {
+          break;
         }
       }
+      
+      // Limit to exactly 10 per page
+      allResults = allResults.slice(0, PER_PAGE);
 
       // Sort by status severity (most endangered first)
       allResults.sort((a, b) => {

@@ -6,7 +6,7 @@ import MapView from '../components/MapView';
 import SoundPlayer from '../components/SoundPlayer';
 import MigrationMap from '../components/MigrationMap';
 import SizeVisualization from '../components/SizeVisualization';
-import { SkeletonDetail } from '../components/Loader';
+import { SkeletonDetail, Loader } from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import { fetchAnimalByName } from '../api/animals';
 import { CONSERVATION_STATUS } from '../utils/constants';
@@ -16,6 +16,7 @@ import { trackAnimalViewForAchievements, trackEndangeredSpecies } from '../utils
 import { isEndangered } from '../api/iucn';
 import { addToFavorites, removeFromFavorites, isFavorite } from '../utils/favorites';
 import { getHabitatTypes } from '../api/worms';
+import { searchMovebankStudies, getMovebankLocations, getMovebankStudy, getStudyIndividuals } from '../api/movebank';
 
 export default function AnimalDetail() {
   const { name } = useParams<{ name: string }>();
@@ -26,6 +27,7 @@ export default function AnimalDetail() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'taxonomy' | 'habitat' | 'conservation' | 'sounds' | 'migration'>('overview');
   const [isAnimalFavorite, setIsAnimalFavorite] = useState(false);
+  const [loadingMigration, setLoadingMigration] = useState(false);
 
   useEffect(() => {
     if (animal) {
@@ -38,6 +40,65 @@ export default function AnimalDetail() {
       loadAnimal(decodeURIComponent(name));
     }
   }, [name]);
+
+  // Load migration data when migration tab is active
+  useEffect(() => {
+    if (activeTab === 'migration' && animal && !animal.migration && !loadingMigration) {
+      loadMigrationData();
+    }
+  }, [activeTab, animal]);
+
+  const loadMigrationData = async () => {
+    if (!animal || loadingMigration) return;
+    
+    setLoadingMigration(true);
+    try {
+      // Try searching with common name and scientific name
+      const searchTerms = [animal.name];
+      if (animal.taxonomy?.scientific_name) {
+        searchTerms.push(animal.taxonomy.scientific_name);
+        // Also try genus only
+        const genus = animal.taxonomy.scientific_name.split(' ')[0];
+        if (genus) searchTerms.push(genus);
+      }
+
+      let studies: any[] = [];
+      for (const term of searchTerms) {
+        try {
+          const foundStudies = await searchMovebankStudies(term);
+          if (foundStudies && foundStudies.length > 0) {
+            studies = foundStudies;
+            break;
+          }
+        } catch (err) {
+          console.debug(`No Movebank studies found for ${term}`);
+        }
+      }
+
+      if (studies.length > 0) {
+        // Use the first study
+        const study = studies[0];
+        const studyDetails = await getMovebankStudy(study.id);
+        const individuals = await getStudyIndividuals(study.id);
+        
+        // Get locations for the first individual, or all if no individuals
+        const individualId = individuals.length > 0 ? individuals[0] : undefined;
+        const locations = await getMovebankLocations(study.id, individualId, 1000);
+
+        if (locations.length > 0 && studyDetails) {
+          setAnimal({
+            ...animal,
+            migration: locations,
+            migrationStudy: studyDetails,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading migration data:', error);
+    } finally {
+      setLoadingMigration(false);
+    }
+  };
 
   // Ensure activeTab exists in available tabs, switch to first available if not
   useEffect(() => {
@@ -676,16 +737,41 @@ export default function AnimalDetail() {
               )}
 
               {/* Migration Tab */}
-              {activeTab === 'migration' && animal.migration && animal.migrationStudy && (
+              {activeTab === 'migration' && (
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                     Migration Tracking Data
                   </h3>
-                  <MigrationMap
-                    locations={animal.migration}
-                    study={animal.migrationStudy}
-                    animalName={animal.name}
-                  />
+                  {loadingMigration ? (
+                    <div className="flex justify-center py-12">
+                      <Loader />
+                    </div>
+                  ) : animal.migration && animal.migrationStudy && animal.migration.length > 0 ? (
+                    <MigrationMap
+                      locations={animal.migration}
+                      study={animal.migrationStudy}
+                      animalName={animal.name}
+                    />
+                  ) : (
+                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-12 text-center">
+                      <svg
+                        className="w-16 h-16 mx-auto mb-4 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                        />
+                      </svg>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        No migration tracking data available for this species
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
