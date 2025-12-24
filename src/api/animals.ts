@@ -208,7 +208,9 @@ function isAnimal(animal: Animal): boolean {
     'palm', 'oak', 'pine', 'maple', 'birch', 'willow', 'rose', 'lily', 'daisy',
     'vernal', 'wheat', 'corn', 'rice', 'barley', 'oat', 'beggarticks', 'tick',
     'aster', 'composite', 'sunflower', 'thistle', 'dandelion', 'clover',
-    'plectranthus', 'woolly'
+    'plectranthus', 'woolly', 'yarrow', 'achillea', 'taraxacum', 'trifolium',
+    'ambrosia', 'artemisia', 'erigeron', 'solidago', 'rudbeckia', 'helianthus',
+    'apocynaceae', 'rosaceae', 'fabaceae', 'poaceae', 'asteraceae', 'lamiaceae'
   ];
   
   if (plantKeywords.some(keyword => name.includes(keyword) || scientificName.includes(keyword))) {
@@ -257,6 +259,29 @@ function isAnimal(animal: Animal): boolean {
  * Convert iNaturalist taxon to Animal format
  */
 function convertINatToAnimal(taxon: INatTaxon): Animal {
+  // Check if it's actually an animal (not a plant) before converting
+  const name = (taxon.preferred_common_name || taxon.name || '').toLowerCase();
+  const sciName = (taxon.name || '').toLowerCase();
+  const iconicTaxon = (taxon.iconic_taxon_name || '').toLowerCase();
+  
+  // Exclude plants - check iconic taxon
+  if (iconicTaxon === 'plantae' || iconicTaxon === 'plants') {
+    throw new Error('Plant detected, skipping');
+  }
+  
+  // Check for plant keywords
+  const plantKeywords = ['yarrow', 'achillea', 'grass', 'tree', 'flower', 'plant', 'vernal'];
+  if (plantKeywords.some(kw => name.includes(kw) || sciName.includes(kw))) {
+    throw new Error('Plant keyword detected, skipping');
+  }
+  
+  // Only allow animal iconic taxa
+  const animalTaxa = ['animalia', 'aves', 'mammalia', 'reptilia', 'amphibia', 'actinopterygii', 'arachnida', 'insecta', 'mollusca'];
+  if (iconicTaxon && !animalTaxa.some(t => iconicTaxon.includes(t))) {
+    // If iconic taxon is not an animal, skip it
+    throw new Error('Not an animal, skipping');
+  }
+  
   return {
     name: taxon.preferred_common_name || taxon.name,
     taxonomy: {
@@ -352,8 +377,13 @@ export async function searchAnimals(query: string, limit: number = 100): Promise
     searchPromises.push(
       searchINatSpecies(query, 1, 30).then(results => {
         results.forEach(taxon => {
-          const animal = convertINatToAnimal(taxon);
-          addUniqueAnimal(animal);
+          try {
+            const animal = convertINatToAnimal(taxon);
+            addUniqueAnimal(animal);
+          } catch (err) {
+            // Skip plants - silently continue
+            console.debug('Skipping non-animal result:', err);
+          }
         });
       }).catch(err => console.debug('iNaturalist search failed:', err))
     );

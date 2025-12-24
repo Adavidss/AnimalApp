@@ -80,8 +80,23 @@ export default function Home() {
               timeoutPromise
             ]) as PromiseSettledResult<any>[];
             
+            // Filter out plants and invalid results
             const data = results
-              .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value !== null)
+              .filter((r): r is PromiseFulfilledResult<any> => {
+                if (r.status !== 'fulfilled' || !r.value) return false;
+                const animal = r.value;
+                // Check if it's actually an animal, not a plant
+                const name = (animal.name || '').toLowerCase();
+                const sciName = (animal.taxonomy?.scientific_name || '').toLowerCase();
+                const kingdom = (animal.taxonomy?.kingdom || '').toLowerCase();
+                
+                // Exclude plants
+                if (kingdom.includes('plantae') || kingdom.includes('plant')) return false;
+                const plantKeywords = ['yarrow', 'achillea', 'grass', 'tree', 'flower', 'plant', 'vernal'];
+                if (plantKeywords.some(kw => name.includes(kw) || sciName.includes(kw))) return false;
+                
+                return true;
+              })
               .map(r => r.value);
             setSeasonalAnimalsData(data);
           } catch (error) {
