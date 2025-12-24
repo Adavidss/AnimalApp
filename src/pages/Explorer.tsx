@@ -182,9 +182,9 @@ export default function Explorer() {
         return;
       }
       
-      // Enrich animals
+      // Enrich animals - limit to 5 at a time to prevent bugs
       const enriched: EnrichedAnimal[] = [];
-      for (const animal of allResults.slice(0, 50)) {
+      for (const animal of allResults.slice(0, 5)) {
         try {
           const enrichedAnimal = await enrichAnimal(
             animal.name,

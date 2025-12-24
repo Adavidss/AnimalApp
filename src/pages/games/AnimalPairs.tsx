@@ -179,8 +179,8 @@ export default function AnimalPairs() {
             </div>
           )}
 
-          {/* Cards Grid */}
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+          {/* Cards Grid - Always 4 columns for proper grid layout */}
+          <div className="grid grid-cols-4 gap-4">
             {animals.map((animal, index) => {
               const isSelected = selected.includes(index);
               const isMatched = matched.has(animal.name);

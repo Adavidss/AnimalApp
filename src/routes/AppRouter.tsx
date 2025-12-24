@@ -66,13 +66,6 @@ function Layout({ children }: { children: React.ReactNode }) {
                   Home
                 </Link>
 
-                <Link
-                  to="/animals"
-                  className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium transition-colors"
-                >
-                  Animals
-                </Link>
-
                 {/* Animals Dropdown */}
                 <div 
                   className="relative group z-50"
@@ -171,9 +164,6 @@ function Layout({ children }: { children: React.ReactNode }) {
             <nav className="flex gap-3 overflow-x-auto">
               <Link to="/" className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                 Home
-              </Link>
-              <Link to="/animals" className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                Animals
               </Link>
               <Link to="/favorites" className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                 ⭐ Favorites

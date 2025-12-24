@@ -242,70 +242,95 @@ export default function SizeChallenge() {
       // Fetch images for all animals in parallel for faster loading
       const imagePromises = gameRounds.map(async (round) => {
         try {
-          // Add timeout to prevent hanging
-          const timeoutPromise = new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('timeout')), 3000)
-          );
-
           // Fix mouse search to get actual mouse, not computer mouse or invertebrate
           const searchQuery1 = round.animal1.name === 'Mouse' ? 'house mouse animal' : round.animal1.name;
           const searchQuery2 = round.animal2.name === 'Mouse' ? 'house mouse animal' : round.animal2.name;
 
-          // Fetch images for both animals in parallel
-          const [images1Result, images2Result] = await Promise.allSettled([
-            Promise.race([fetchUnsplashImages(searchQuery1, 1), timeoutPromise]),
-            Promise.race([fetchUnsplashImages(searchQuery2, 1), timeoutPromise])
+          // Try multiple sources with longer timeouts and retries
+          const fetchImageWithRetries = async (query: string, animalName: string): Promise<string> => {
+            // Try 1: Unsplash with longer timeout (5 seconds)
+            try {
+              const timeout1 = new Promise<never>((_, reject) => 
+                setTimeout(() => reject(new Error('timeout')), 5000)
+              );
+              const images1 = await Promise.race([fetchUnsplashImages(query, 1), timeout1]);
+              if (images1 && images1.length > 0 && images1[0]) {
+                const url = images1[0]?.urls?.small || 
+                           images1[0]?.urls?.thumb || 
+                           images1[0]?.urls?.regular || '';
+                if (url) return url;
+              }
+            } catch (e) {
+              // Continue to next attempt
+            }
+
+            // Try 2: Try with "animal" suffix
+            if (!query.toLowerCase().includes('animal')) {
+              try {
+                const timeout2 = new Promise<never>((_, reject) => 
+                  setTimeout(() => reject(new Error('timeout')), 5000)
+                );
+                const images2 = await Promise.race([fetchUnsplashImages(`${query} animal`, 1), timeout2]);
+                if (images2 && images2.length > 0 && images2[0]) {
+                  const url = images2[0]?.urls?.small || 
+                             images2[0]?.urls?.thumb || 
+                             images2[0]?.urls?.regular || '';
+                  if (url) return url;
+                }
+              } catch (e) {
+                // Continue to next attempt
+              }
+            }
+
+            // Try 3: Try original name again with different variations
+            if (animalName !== query) {
+              try {
+                const timeout3 = new Promise<never>((_, reject) => 
+                  setTimeout(() => reject(new Error('timeout')), 5000)
+                );
+                const images3 = await Promise.race([fetchUnsplashImages(animalName, 1), timeout3]);
+                if (images3 && images3.length > 0 && images3[0]) {
+                  const url = images3[0]?.urls?.small || 
+                             images3[0]?.urls?.thumb || 
+                             images3[0]?.urls?.regular || '';
+                  if (url) return url;
+                }
+              } catch (e) {
+                // Continue to next attempt
+              }
+            }
+
+            // Try 4: Try with scientific name variations (split words)
+            const words = animalName.split(' ');
+            if (words.length > 1) {
+              try {
+                const timeout4 = new Promise<never>((_, reject) => 
+                  setTimeout(() => reject(new Error('timeout')), 5000)
+                );
+                const lastWord = words[words.length - 1];
+                const images4 = await Promise.race([fetchUnsplashImages(lastWord, 1), timeout4]);
+                if (images4 && images4.length > 0 && images4[0]) {
+                  const url = images4[0]?.urls?.small || 
+                             images4[0]?.urls?.thumb || 
+                             images4[0]?.urls?.regular || '';
+                  if (url) return url;
+                }
+              } catch (e) {
+                // Skip
+              }
+            }
+
+            return '';
+          };
+
+          // Fetch both images in parallel with retries
+          const [image1, image2] = await Promise.all([
+            fetchImageWithRetries(searchQuery1, round.animal1.name),
+            fetchImageWithRetries(searchQuery2, round.animal2.name)
           ]);
-          
-          // Try multiple image URL sizes with better fallbacks
-          if (images1Result.status === 'fulfilled' && images1Result.value[0]) {
-            round.animal1.image = images1Result.value[0]?.urls?.small || 
-                                  images1Result.value[0]?.urls?.thumb || 
-                                  images1Result.value[0]?.urls?.regular || '';
-          }
-          
-          if (images2Result.status === 'fulfilled' && images2Result.value[0]) {
-            round.animal2.image = images2Result.value[0]?.urls?.small || 
-                                  images2Result.value[0]?.urls?.thumb || 
-                                  images2Result.value[0]?.urls?.regular || '';
-          }
-          
-          // If still no image, try with timeout and different query
-          if (!round.animal1.image && round.animal1.name) {
-            try {
-              const fallbackImages = await Promise.race([
-                fetchUnsplashImages(round.animal1.name, 1),
-                new Promise<typeof fetchUnsplashImages extends (...args: any[]) => Promise<infer T> ? T : never>((_, reject) => 
-                  setTimeout(() => reject(new Error('timeout')), 2000)
-                )
-              ]);
-              if (fallbackImages?.[0]) {
-                round.animal1.image = fallbackImages[0]?.urls?.small || 
-                                     fallbackImages[0]?.urls?.thumb || 
-                                     fallbackImages[0]?.urls?.regular || '';
-              }
-            } catch (e) {
-              // Keep empty image
-            }
-          }
-          
-          if (!round.animal2.image && round.animal2.name) {
-            try {
-              const fallbackImages = await Promise.race([
-                fetchUnsplashImages(round.animal2.name, 1),
-                new Promise<typeof fetchUnsplashImages extends (...args: any[]) => Promise<infer T> ? T : never>((_, reject) => 
-                  setTimeout(() => reject(new Error('timeout')), 2000)
-                )
-              ]);
-              if (fallbackImages?.[0]) {
-                round.animal2.image = fallbackImages[0]?.urls?.small || 
-                                     fallbackImages[0]?.urls?.thumb || 
-                                     fallbackImages[0]?.urls?.regular || '';
-              }
-            } catch (e) {
-              // Keep empty image
-            }
-          }
+
+          round.animal1.image = image1;
+          round.animal2.image = image2;
         } catch (error) {
           console.error('Failed to fetch images:', error);
           // Keep going even if images fail - game can still work
