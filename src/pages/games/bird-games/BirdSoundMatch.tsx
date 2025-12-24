@@ -231,6 +231,11 @@ export default function BirdSoundMatch() {
     loadQuiz();
   }, [loadQuiz]);
 
+  useEffect(() => {
+    // Reset image error when bird changes
+    setImageError(false);
+  }, [currentBird]);
+
   const handleSelect = (birdName: string) => {
     if (selected) return;
     setSelected(birdName);
