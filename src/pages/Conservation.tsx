@@ -83,17 +83,16 @@ export default function Conservation() {
 
               // Don't filter here - we'll filter after all results are loaded
               // This ensures we can filter properly when user changes filter
-                results.push({
-                  id: (animal as any).id || `${animal.name}-${Date.now()}`,
-                  name: animal.name,
-                  taxonomy: animal.taxonomy,
-                  images: images || [],
-                  conservationStatus: conservationStatus || undefined,
-                  locations: animal.locations,
-                  characteristics: animal.characteristics,
-                  wikipedia: undefined,
-                } as EnrichedAnimal);
-              }
+              results.push({
+                id: (animal as any).id || `${animal.name}-${Date.now()}`,
+                name: animal.name,
+                taxonomy: animal.taxonomy,
+                images: images || [],
+                conservationStatus: conservationStatus || undefined,
+                locations: animal.locations,
+                characteristics: animal.characteristics,
+                wikipedia: undefined,
+              } as EnrichedAnimal);
             }
           }
         } catch (err: any) {
