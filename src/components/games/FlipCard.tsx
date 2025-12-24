@@ -191,12 +191,27 @@ export function SimpleCard({
         ${className}
       `}
     >
-      {image && (
+      {image ? (
         <img
           src={image}
           alt={title || 'Card'}
           className="w-full h-48 object-cover"
+          onError={(e) => {
+            // Hide image and show placeholder if it fails to load
+            (e.target as HTMLImageElement).style.display = 'none';
+            const parent = (e.target as HTMLImageElement).parentElement;
+            if (parent && !parent.querySelector('.image-error-placeholder')) {
+              const placeholder = document.createElement('div');
+              placeholder.className = 'image-error-placeholder flex items-center justify-center h-48 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400';
+              placeholder.textContent = title || '?';
+              parent.insertBefore(placeholder, e.target);
+            }
+          }}
         />
+      ) : (
+        <div className="flex items-center justify-center h-48 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+          {title || '?'}
+        </div>
       )}
 
       {(title || subtitle) && (
