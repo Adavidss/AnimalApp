@@ -4,7 +4,6 @@ import {
   getFavorites,
   removeFromFavorites,
   clearFavorites,
-  getFavoritesByCategory,
   exportFavorites,
   FavoriteAnimal,
 } from '../utils/favorites';
@@ -67,7 +66,12 @@ export default function Favorites() {
   };
 
   const filterAndSortFavorites = () => {
-    let filtered = getFavoritesByCategory(selectedCategory);
+    let filtered = [...favorites];
+    
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter((fav) => fav.category === selectedCategory);
+    }
 
     // Sort
     if (sortBy === 'recent') {

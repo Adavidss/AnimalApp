@@ -159,20 +159,6 @@ export default function Cats() {
             <p className="text-xl text-gray-600 dark:text-gray-300">
               {categoryTheme.description}
             </p>
-            <div className="flex gap-4 justify-center">
-              <div className="px-6 py-3 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                <div className="text-2xl font-bold" style={{ color: categoryTheme.primaryColor }}>
-                  {breeds.length}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Total Breeds</div>
-              </div>
-              <div className="px-6 py-3 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                <div className="text-2xl font-bold" style={{ color: categoryTheme.primaryColor }}>
-                  {filteredBreeds.length}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Showing</div>
-              </div>
-            </div>
           </div>
         </div>
       </section>

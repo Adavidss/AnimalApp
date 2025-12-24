@@ -4,9 +4,9 @@ interface PaginationProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   itemsPerPage: number;
-  totalItems: number;
-  showingStart: number;
-  showingEnd: number;
+  totalItems?: number;
+  showingStart?: number;
+  showingEnd?: number;
 }
 
 export default function Pagination({
@@ -14,9 +14,9 @@ export default function Pagination({
   totalPages,
   onPageChange,
   itemsPerPage: _itemsPerPage,
-  totalItems,
-  showingStart,
-  showingEnd,
+  totalItems: _totalItems,
+  showingStart: _showingStart,
+  showingEnd: _showingEnd,
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -58,12 +58,6 @@ export default function Pagination({
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
-      {/* Items count */}
-      <div className="text-sm text-gray-600 dark:text-gray-400">
-        Showing <span className="font-medium">{showingStart}</span> to{' '}
-        <span className="font-medium">{showingEnd}</span> of{' '}
-        <span className="font-medium">{totalItems}</span> results
-      </div>
 
       {/* Pagination controls */}
       <div className="flex items-center gap-2">

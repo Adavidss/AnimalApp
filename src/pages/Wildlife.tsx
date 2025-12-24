@@ -182,12 +182,6 @@ export default function Wildlife() {
               {categoryTheme.description}
             </p>
             <div className="flex gap-4 justify-center">
-              <div className="px-6 py-3 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                <div className="text-2xl font-bold" style={{ color: categoryTheme.primaryColor }}>
-                  {allAnimals.length}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Species</div>
-              </div>
             </div>
           </div>
         </div>

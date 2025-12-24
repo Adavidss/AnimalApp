@@ -12,6 +12,7 @@ import Fish from '../pages/Fish';
 import Reptiles from '../pages/Reptiles';
 import Wildlife from '../pages/Wildlife';
 import Favorites from '../pages/Favorites';
+import Achievements from '../pages/Achievements';
 import ComparisonTool from '../pages/ComparisonTool';
 import Quiz from '../pages/Quiz';
 import ApiTest from '../pages/ApiTest';
@@ -117,6 +118,13 @@ function Layout({ children }: { children: React.ReactNode }) {
                   Favorites
                 </Link>
                 <Link
+                  to="/achievements"
+                  className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium transition-colors flex items-center gap-1"
+                >
+                  <span>🏆</span>
+                  Achievements
+                </Link>
+                <Link
                   to="/games"
                   className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium transition-colors flex items-center gap-1"
                 >
@@ -160,6 +168,9 @@ function Layout({ children }: { children: React.ReactNode }) {
               <Link to="/favorites" className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                 ⭐ Favorites
               </Link>
+              <Link to="/achievements" className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                🏆 Achievements
+              </Link>
               <Link to="/games" className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                 🎮 Games
               </Link>
@@ -201,6 +212,7 @@ export default function AppRouter() {
           <Route path="/reptiles" element={<Reptiles />} />
           <Route path="/wildlife" element={<Wildlife />} />
           <Route path="/favorites" element={<Favorites />} />
+          <Route path="/achievements" element={<Achievements />} />
           <Route path="/compare" element={<ComparisonTool />} />
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/games" element={<GamesHub />} />
