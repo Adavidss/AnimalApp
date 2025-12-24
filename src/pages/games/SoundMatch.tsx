@@ -82,9 +82,6 @@ export default function SoundMatch() {
       // Get random animals for this game
       const gameAnimals = getRandomAnimals(ROUNDS_PER_GAME, difficulty);
 
-      // Prepare rounds
-      const preparedRounds: GameRound[] = [];
-
       // Fetch all images and sounds in parallel for faster loading
       const roundsPromises = gameAnimals.map(async (animal) => {
         // Get 3 wrong answers
