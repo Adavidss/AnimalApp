@@ -24,6 +24,7 @@ export default function BirdSoundMatch() {
   const [soundUrl, setSoundUrl] = useState<string>('');
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [errorDetails, setErrorDetails] = useState<string>('');
+  const [imageError, setImageError] = useState(false);
 
   const addDebugInfo = (message: string) => {
     console.log(`[BirdSoundMatch] ${message}`);
@@ -37,6 +38,7 @@ export default function BirdSoundMatch() {
     setSoundUrl('');
     setDebugInfo([]);
     setErrorDetails('');
+    setImageError(false);
     
     try {
       addDebugInfo('Starting to load quiz...');
@@ -416,12 +418,21 @@ export default function BirdSoundMatch() {
                       {currentBird.sciName}
                     </p>
                   )}
-                  {currentBird.default_photo?.medium_url && (
+                  {currentBird.default_photo?.medium_url && !imageError ? (
                     <img
                       src={currentBird.default_photo.medium_url}
                       alt={currentBird.name}
                       className="w-full max-w-md mx-auto mt-4 rounded-lg shadow-lg"
+                      onError={() => {
+                        setImageError(true);
+                      }}
                     />
+                  ) : (
+                    <div className="w-full max-w-md mx-auto mt-4 p-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg shadow-lg flex items-center justify-center">
+                      <span className="text-white text-3xl font-bold">
+                        {currentBird.name}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
