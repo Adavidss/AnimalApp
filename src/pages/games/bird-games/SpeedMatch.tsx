@@ -236,13 +236,24 @@ export default function SpeedMatch() {
               Match the Bird!
             </h2>
 
-            {imageUrl && (
+            {imageUrl && !imageError ? (
               <img
                 src={imageUrl}
                 alt="Bird"
                 className="max-w-md w-full mx-auto rounded-lg shadow-lg mb-8"
+                onError={() => {
+                  setImageError(true);
+                }}
               />
-            )}
+            ) : currentBird ? (
+              <div className="mb-8 w-full max-w-md mx-auto">
+                <div className="w-full h-64 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg shadow-lg flex items-center justify-center">
+                  <span className="text-white text-3xl font-bold text-center px-4">
+                    {currentBird.name}
+                  </span>
+                </div>
+              </div>
+            ) : null}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {options.map((bird, index) => {

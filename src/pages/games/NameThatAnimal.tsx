@@ -14,6 +14,7 @@ export default function NameThatAnimal() {
   const [round, setRound] = useState(0);
   const [feedback, setFeedback] = useState('');
   const [hints, setHints] = useState<string[]>([]);
+  const [imageError, setImageError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const loadAnimal = useCallback(async () => {
@@ -21,6 +22,7 @@ export default function NameThatAnimal() {
     setUserInput('');
     setFeedback('');
     setHints([]);
+    setImageError(false);
 
     try {
       const randomAnimal = await getRandomAnimal();
@@ -129,13 +131,24 @@ export default function NameThatAnimal() {
           {/* Game Content */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
             <div className="text-center">
-              {imageUrl && (
+              {imageUrl && !imageError ? (
                 <img
                   src={imageUrl}
                   alt="Animal"
                   className="max-w-full h-64 md:h-96 mx-auto rounded-lg shadow-lg mb-6 object-contain"
+                  onError={() => {
+                    setImageError(true);
+                  }}
                 />
-              )}
+              ) : animal ? (
+                <div className="mb-6 w-full max-w-2xl mx-auto">
+                  <div className="w-full h-64 md:h-96 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg shadow-lg flex items-center justify-center">
+                    <span className="text-white text-4xl font-bold text-center px-4">
+                      {animal.name}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
 
               {/* Hints */}
               {hints.length > 0 && (

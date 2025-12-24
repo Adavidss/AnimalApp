@@ -17,6 +17,7 @@ export default function QuickFlash() {
   const [feedback, setFeedback] = useState('');
   const [showImage, setShowImage] = useState(false);
   const [inputVisible, setInputVisible] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const loadAnimal = useCallback(async () => {
@@ -25,6 +26,7 @@ export default function QuickFlash() {
     setFeedback('');
     setShowImage(false);
     setInputVisible(false);
+    setImageError(false);
 
     try {
       const randomAnimal = await getRandomAnimal();

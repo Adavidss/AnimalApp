@@ -197,6 +197,7 @@ export default function SizeChallenge() {
     setCorrect(0);
     setStreak(0);
     setScore(0);
+    setImageErrors(new Set()); // Reset image errors
 
     try {
       const gameRounds = generateRounds(difficulty);
@@ -638,19 +639,20 @@ export default function SizeChallenge() {
               onClick={() => handleAnswer(1)}
               className="p-6 bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 border-2 border-gray-200 dark:border-gray-600 hover:border-purple-500 rounded-xl transition-all"
             >
-              {round.animal1.image ? (
+              {round.animal1.image && !imageErrors.has(`animal1-${currentRound}`) ? (
                 <img
                   src={round.animal1.image}
                   alt={round.animal1.name}
                   className="w-full h-48 object-contain rounded-lg mb-4 bg-gray-100 dark:bg-gray-700"
-                  onError={(e) => {
-                    // Hide image if it fails to load
-                    (e.target as HTMLImageElement).style.display = 'none';
+                  onError={() => {
+                    setImageErrors(prev => new Set(prev).add(`animal1-${currentRound}`));
                   }}
                 />
               ) : (
-                <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-gray-400 dark:text-gray-500">No image</span>
+                <div className="w-full h-48 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg mb-4 flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold text-center px-2">
+                    {round.animal1.name}
+                  </span>
                 </div>
               )}
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -662,19 +664,20 @@ export default function SizeChallenge() {
               onClick={() => handleAnswer(2)}
               className="p-6 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-500 rounded-xl transition-all"
             >
-              {round.animal2.image ? (
+              {round.animal2.image && !imageErrors.has(`animal2-${currentRound}`) ? (
                 <img
                   src={round.animal2.image}
                   alt={round.animal2.name}
                   className="w-full h-48 object-contain rounded-lg mb-4 bg-gray-100 dark:bg-gray-700"
-                  onError={(e) => {
-                    // Hide image if it fails to load
-                    (e.target as HTMLImageElement).style.display = 'none';
+                  onError={() => {
+                    setImageErrors(prev => new Set(prev).add(`animal2-${currentRound}`));
                   }}
                 />
               ) : (
-                <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-gray-400 dark:text-gray-500">No image</span>
+                <div className="w-full h-48 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg mb-4 flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold text-center px-2">
+                    {round.animal2.name}
+                  </span>
                 </div>
               )}
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">

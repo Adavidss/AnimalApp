@@ -20,11 +20,13 @@ export default function BirdQuiz() {
   const [options, setOptions] = useState<Bird[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [correct, setCorrect] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   const loadQuiz = useCallback(async () => {
     setLoading(true);
     setSelected(null);
     setCorrect(null);
+    setImageError(false);
     try {
       // Get birds from iNaturalist
       const birds = await searchINatSpecies('bird');
@@ -116,18 +118,26 @@ export default function BirdQuiz() {
 
           {/* Game Content */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-            {imageUrl && (
+            {imageUrl && !imageError ? (
               <div className="mb-8">
                 <img
                   src={imageUrl}
                   alt="Quiz Bird"
                   className="w-full max-w-2xl mx-auto rounded-lg shadow-lg"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x400?text=Bird+Image';
+                  onError={() => {
+                    setImageError(true);
                   }}
                 />
               </div>
-            )}
+            ) : currentBird ? (
+              <div className="mb-8 w-full max-w-2xl mx-auto">
+                <div className="w-full h-64 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg shadow-lg flex items-center justify-center">
+                  <span className="text-white text-4xl font-bold text-center px-4">
+                    {currentBird.name}
+                  </span>
+                </div>
+              </div>
+            ) : null}
 
             {/* Options */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">

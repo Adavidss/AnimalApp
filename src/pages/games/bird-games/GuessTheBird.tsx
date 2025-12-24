@@ -22,12 +22,14 @@ export default function GuessTheBird() {
   const [gameType, setGameType] = useState<'image' | 'sound'>('image');
   const [revealed, setRevealed] = useState(false);
   const [blurred, setBlurred] = useState(true);
+  const [imageError, setImageError] = useState(false);
   const [soundUrl, setSoundUrl] = useState<string>('');
 
   const loadRandomBird = useCallback(async () => {
     setLoading(true);
     setRevealed(false);
     setBlurred(true);
+    setImageError(false);
     try {
       // Randomly choose game type
       const type = Math.random() > 0.5 ? 'image' : 'sound';
