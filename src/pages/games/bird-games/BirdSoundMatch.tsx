@@ -37,53 +37,82 @@ export default function BirdSoundMatch() {
 
       // Find a bird with sound - try up to 5 birds (like Bird-App)
       let correctBird: Bird | null = null;
-      let soundFound = false;
+      let soundFileUrl = '';
       let attempts = 0;
-      const maxAttempts = 5;
+      const maxAttempts = 10; // Increase attempts for better success rate
 
-      while (!soundFound && attempts < maxAttempts) {
+      while (attempts < maxAttempts && (!correctBird || !soundFileUrl)) {
         const randomBird = birds[Math.floor(Math.random() * birds.length)];
         // Use scientific name for better Xeno-Canto results (like Bird-App)
         const scientificName = randomBird.name; // This is the scientific name from iNaturalist
         
         try {
-          const sounds = await fetchAnimalSounds(scientificName, 1);
+          // Fetch more sounds to increase chances of finding a good one
+          const sounds = await fetchAnimalSounds(scientificName, 5);
           
-          if (sounds && sounds.length > 0 && sounds[0].file) {
-            // Normalize sound URL (handle // prefix like Bird-App does)
-            let soundFileUrl = sounds[0].file;
-            if (soundFileUrl.startsWith('//')) {
-              soundFileUrl = `https:${soundFileUrl}`;
-            } else if (!soundFileUrl.startsWith('http')) {
-              // If it's just a path, construct full URL from recording ID
-              if (sounds[0].id) {
-                soundFileUrl = `https://xeno-canto.org/${sounds[0].id}/download`;
+          if (sounds && sounds.length > 0) {
+            // Filter for quality recordings (A, B, C) like Bird-App does
+            const goodRecordings = sounds.filter((s: any) => 
+              s.q && ['A', 'B', 'C'].includes(s.q)
+            );
+            
+            const recordingsToUse = goodRecordings.length > 0 ? goodRecordings : sounds;
+            
+            // Pick a random recording from the available ones (up to 3)
+            const randomIndex = Math.floor(Math.random() * Math.min(3, recordingsToUse.length));
+            const recording = recordingsToUse[randomIndex];
+            
+            if (recording && recording.file) {
+              // Normalize sound URL exactly like Bird-App does
+              let normalizedUrl = recording.file;
+              
+              if (normalizedUrl.startsWith('//')) {
+                normalizedUrl = `https:${normalizedUrl}`;
+              } else if (normalizedUrl.startsWith('http://') || normalizedUrl.startsWith('https://')) {
+                // Already a full URL
+                normalizedUrl = normalizedUrl;
+              } else if (recording.id) {
+                // Fallback: construct from recording ID
+                normalizedUrl = `https://xeno-canto.org/${recording.id}/download`;
+              } else {
+                // Last resort: try to extract ID from file path
+                const match = normalizedUrl.match(/\/(\d+)\//);
+                if (match) {
+                  normalizedUrl = `https://xeno-canto.org/${match[1]}/download`;
+                }
+              }
+              
+              // Verify the URL is valid
+              if (normalizedUrl && normalizedUrl.startsWith('http')) {
+                correctBird = {
+                  id: String(randomBird.id || Math.random()),
+                  name: randomBird.preferred_common_name || randomBird.name || 'Unknown Bird',
+                  preferred_common_name: randomBird.preferred_common_name || randomBird.name,
+                  sciName: scientificName,
+                  default_photo: randomBird.default_photo,
+                };
+                soundFileUrl = normalizedUrl;
+                break; // Found a valid sound, exit loop
               }
             }
-            
-            correctBird = {
-              id: String(randomBird.id || Math.random()),
-              name: randomBird.preferred_common_name || randomBird.name || 'Unknown Bird',
-              preferred_common_name: randomBird.preferred_common_name || randomBird.name,
-              sciName: scientificName,
-              default_photo: randomBird.default_photo,
-            };
-            setSoundUrl(soundFileUrl);
-            soundFound = true;
           }
         } catch (error) {
           // Continue to next attempt
-          console.debug('Error fetching sound for bird:', error);
+          if (import.meta.env.DEV) {
+            console.debug('Error fetching sound for bird:', error);
+          }
         }
         attempts++;
       }
 
-      if (!correctBird || !soundUrl) {
+      if (!correctBird || !soundFileUrl) {
         // No sound found after multiple attempts
+        setLoading(false);
         return;
       }
 
       setCurrentBird(correctBird);
+      setSoundUrl(soundFileUrl);
 
       // Pick 3 wrong options
       const wrongBirds: Bird[] = [];
@@ -200,9 +229,18 @@ export default function BirdSoundMatch() {
                 autoPlay
                 className="w-full max-w-md mx-auto"
                 src={soundUrl}
+                onError={(e) => {
+                  console.error('Audio loading error:', e);
+                  // Try to reload with a different approach if the audio fails
+                }}
               >
                 Your browser does not support the audio element.
               </audio>
+              {soundUrl && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
+                  🔊 Listen to the sound and guess the bird
+                </p>
+              )}
             </div>
 
             {/* Options */}
