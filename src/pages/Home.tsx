@@ -163,10 +163,15 @@ export default function Home() {
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 md:gap-3">
-                  <span className="text-3xl md:text-4xl">⭐</span>
-                  Random Animal
-                </h2>
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 md:gap-3">
+                    <span className="text-3xl md:text-4xl">⭐</span>
+                    Random Animal
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 italic">
+                    Disclaimer: Sometimes this will give you plants with names that sound like an animal
+                  </p>
+                </div>
                 <button
                   onClick={refreshAnimalOfTheDay}
                   className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-2"

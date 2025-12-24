@@ -36,11 +36,19 @@ export default function Animals() {
     },
     {
       id: 'fish',
-      title: 'Fish',
+      title: 'Aquatic',
       description: 'Discover marine and freshwater fish species and their habitats',
       link: '/fish',
       gradient: 'from-blue-600 to-indigo-700',
       icon: '🐠'
+    },
+    {
+      id: 'conservation',
+      title: 'Conservation Status',
+      description: 'Explore animals by their conservation status and endangered species',
+      link: '/conservation',
+      gradient: 'from-red-600 to-orange-600',
+      icon: '🛡️'
     },
     {
       id: 'explorer',

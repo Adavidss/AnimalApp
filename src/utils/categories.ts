@@ -2,7 +2,7 @@
  * Category definitions and themes for the Animal Atlas
  */
 
-export type AnimalCategory = 'dogs' | 'cats' | 'birds' | 'fish' | 'reptiles' | 'wildlife' | 'all';
+export type AnimalCategory = 'dogs' | 'cats' | 'birds' | 'fish' | 'reptiles' | 'wildlife' | 'conservation' | 'all';
 
 export interface CategoryTheme {
   id: AnimalCategory;
@@ -59,7 +59,7 @@ export const CATEGORY_THEMES: Record<AnimalCategory, CategoryTheme> = {
   },
   fish: {
     id: 'fish',
-    name: 'Fish & Aquatic',
+    name: 'Aquatic',
     emoji: '🐠',
     icon: '🐠',
     description: 'Underwater wonders - 30,000+ species',
@@ -68,6 +68,18 @@ export const CATEGORY_THEMES: Record<AnimalCategory, CategoryTheme> = {
     bgGradient: 'from-teal-500 to-green-500',
     textColor: 'text-teal-600',
     path: '/fish',
+  },
+  conservation: {
+    id: 'conservation',
+    name: 'Conservation Status',
+    emoji: '🛡️',
+    icon: '🛡️',
+    description: 'Animals by conservation status',
+    primaryColor: '#E74C3C',
+    accentColor: '#FADBD8',
+    bgGradient: 'from-red-600 to-orange-600',
+    textColor: 'text-red-600',
+    path: '/conservation',
   },
   reptiles: {
     id: 'reptiles',
@@ -117,6 +129,7 @@ export function getCategoryFromPath(path: string): AnimalCategory {
   if (path.includes('/fish')) return 'fish';
   if (path.includes('/reptiles')) return 'reptiles';
   if (path.includes('/wildlife')) return 'wildlife';
+  if (path.includes('/conservation')) return 'conservation';
   return 'all';
 }
 
@@ -138,5 +151,6 @@ export function getMainCategories(): CategoryTheme[] {
     CATEGORY_THEMES.fish,
     CATEGORY_THEMES.reptiles,
     CATEGORY_THEMES.wildlife,
+    CATEGORY_THEMES.conservation,
   ];
 }

@@ -9,6 +9,7 @@ import Dogs from '../pages/Dogs';
 import Cats from '../pages/Cats';
 import Birds from '../pages/Birds';
 import Fish from '../pages/Fish';
+import Conservation from '../pages/Conservation';
 import Reptiles from '../pages/Reptiles';
 import Wildlife from '../pages/Wildlife';
 import Favorites from '../pages/Favorites';
@@ -106,9 +107,13 @@ function Layout({ children }: { children: React.ReactNode }) {
                       <span className="text-xl">🦁</span>
                       <span className="font-medium text-gray-700 dark:text-gray-300">Wildlife</span>
                     </Link>
-                    <Link to="/fish" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-b-lg">
+                    <Link to="/fish" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                       <span className="text-xl">🐠</span>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Fish</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Aquatic</span>
+                    </Link>
+                    <Link to="/conservation" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-b-lg">
+                      <span className="text-xl">🛡️</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Conservation Status</span>
                     </Link>
                   </div>
                 </div>
@@ -211,6 +216,7 @@ export default function AppRouter() {
           <Route path="/fish" element={<Fish />} />
           <Route path="/reptiles" element={<Reptiles />} />
           <Route path="/wildlife" element={<Wildlife />} />
+          <Route path="/conservation" element={<Conservation />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/quiz" element={<Quiz />} />
