@@ -82,16 +82,78 @@ export default function AnimalHangman() {
 
   const getHangmanDrawing = () => {
     const stages = [
-      '', // 0
-      'O', // 1
-      'O\n|', // 2
-      ' O\n |\n |', // 3
-      ' O\n/|\n |', // 4
-      ' O\n/|\\\n |', // 5
-      ' O\n/|\\\n |\n/', // 6
-      ' O\n/|\\\n |\n/ \\', // 7
+      // 0 wrong guesses - empty gallows
+      <svg width="200" height="250" className="mx-auto">
+        <line x1="20" y1="230" x2="180" y2="230" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="230" x2="50" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="20" x2="130" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="20" x2="130" y2="50" stroke="currentColor" strokeWidth="3" />
+      </svg>,
+      // 1 wrong - head
+      <svg width="200" height="250" className="mx-auto">
+        <line x1="20" y1="230" x2="180" y2="230" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="230" x2="50" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="20" x2="130" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="20" x2="130" y2="50" stroke="currentColor" strokeWidth="3" />
+        <circle cx="130" cy="70" r="20" stroke="currentColor" strokeWidth="3" fill="none" />
+      </svg>,
+      // 2 wrong - head + body
+      <svg width="200" height="250" className="mx-auto">
+        <line x1="20" y1="230" x2="180" y2="230" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="230" x2="50" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="20" x2="130" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="20" x2="130" y2="50" stroke="currentColor" strokeWidth="3" />
+        <circle cx="130" cy="70" r="20" stroke="currentColor" strokeWidth="3" fill="none" />
+        <line x1="130" y1="90" x2="130" y2="170" stroke="currentColor" strokeWidth="3" />
+      </svg>,
+      // 3 wrong - head + body + left arm
+      <svg width="200" height="250" className="mx-auto">
+        <line x1="20" y1="230" x2="180" y2="230" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="230" x2="50" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="20" x2="130" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="20" x2="130" y2="50" stroke="currentColor" strokeWidth="3" />
+        <circle cx="130" cy="70" r="20" stroke="currentColor" strokeWidth="3" fill="none" />
+        <line x1="130" y1="90" x2="130" y2="170" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="120" x2="90" y2="140" stroke="currentColor" strokeWidth="3" />
+      </svg>,
+      // 4 wrong - head + body + both arms
+      <svg width="200" height="250" className="mx-auto">
+        <line x1="20" y1="230" x2="180" y2="230" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="230" x2="50" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="20" x2="130" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="20" x2="130" y2="50" stroke="currentColor" strokeWidth="3" />
+        <circle cx="130" cy="70" r="20" stroke="currentColor" strokeWidth="3" fill="none" />
+        <line x1="130" y1="90" x2="130" y2="170" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="120" x2="90" y2="140" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="120" x2="170" y2="140" stroke="currentColor" strokeWidth="3" />
+      </svg>,
+      // 5 wrong - head + body + both arms + left leg
+      <svg width="200" height="250" className="mx-auto">
+        <line x1="20" y1="230" x2="180" y2="230" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="230" x2="50" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="20" x2="130" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="20" x2="130" y2="50" stroke="currentColor" strokeWidth="3" />
+        <circle cx="130" cy="70" r="20" stroke="currentColor" strokeWidth="3" fill="none" />
+        <line x1="130" y1="90" x2="130" y2="170" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="120" x2="90" y2="140" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="120" x2="170" y2="140" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="170" x2="100" y2="220" stroke="currentColor" strokeWidth="3" />
+      </svg>,
+      // 6 wrong - complete hangman
+      <svg width="200" height="250" className="mx-auto">
+        <line x1="20" y1="230" x2="180" y2="230" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="230" x2="50" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="50" y1="20" x2="130" y2="20" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="20" x2="130" y2="50" stroke="currentColor" strokeWidth="3" />
+        <circle cx="130" cy="70" r="20" stroke="currentColor" strokeWidth="3" fill="none" />
+        <line x1="130" y1="90" x2="130" y2="170" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="120" x2="90" y2="140" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="120" x2="170" y2="140" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="170" x2="100" y2="220" stroke="currentColor" strokeWidth="3" />
+        <line x1="130" y1="170" x2="160" y2="220" stroke="currentColor" strokeWidth="3" />
+      </svg>
     ];
-    return stages[Math.min(wrongGuesses, 7)];
+    return stages[Math.min(wrongGuesses, stages.length - 1)];
   };
 
   if (loading) {
@@ -146,9 +208,9 @@ export default function AnimalHangman() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
             {/* Hangman Drawing */}
             <div className="text-center mb-8">
-              <pre className="text-4xl font-mono text-gray-800 dark:text-gray-200 whitespace-pre-line min-h-[120px] flex items-center justify-center">
+              <div className="text-gray-800 dark:text-gray-200 min-h-[250px] flex items-center justify-center">
                 {getHangmanDrawing()}
-              </pre>
+              </div>
             </div>
 
             {/* Word Display */}
@@ -187,10 +249,14 @@ export default function AnimalHangman() {
                   const isCorrect = isGuessed && animal.includes(letter);
 
                   let bgClass = 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600';
+                  let textClass = 'text-gray-900 dark:text-white'; // Explicit text color for default state
+                  
                   if (isCorrect) {
-                    bgClass = 'bg-green-500 text-white';
+                    bgClass = 'bg-green-500';
+                    textClass = 'text-white';
                   } else if (isWrong) {
-                    bgClass = 'bg-red-500 text-white';
+                    bgClass = 'bg-red-500';
+                    textClass = 'text-white';
                   }
 
                   return (
@@ -198,7 +264,7 @@ export default function AnimalHangman() {
                       key={letter}
                       onClick={() => handleGuess(letter)}
                       disabled={isGuessed}
-                      className={`p-3 rounded-lg font-bold transition-all ${bgClass} ${
+                      className={`p-3 rounded-lg font-bold transition-all ${bgClass} ${textClass} ${
                         isGuessed ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:scale-110'
                       }`}
                     >
