@@ -11,7 +11,6 @@ import { searchINatSpecies } from '../api/inaturalist';
 import SoundPlayer from '../components/SoundPlayer';
 import { fetchWikipediaSummary } from '../api/wikipedia';
 import { getAutocompleteSuggestions } from '../utils/searchHelpers';
-import { getRecentSearches } from '../utils/cache';
 import { addToFavorites, removeFromFavorites, isFavorite } from '../utils/favorites';
 import Pagination from '../components/Pagination';
 
@@ -20,7 +19,7 @@ export default function Birds() {
   const [loading, setLoading] = useState(false);
   const [recentSightings, setRecentSightings] = useState<EBirdObservation[]>([]);
   const [locationGranted, setLocationGranted] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [_userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   
   // Bird search (Explore tab) - single bird display
   const [searchQuery, setSearchQuery] = useState('');

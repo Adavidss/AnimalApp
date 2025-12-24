@@ -1,7 +1,6 @@
 import { API_URLS, CACHE_DURATION } from '../utils/constants';
 import { getCache, setCache } from '../utils/cache';
 import { UnsplashImage } from '../types/animal';
-import { handleApiErrorSilently } from '../utils/errorHandling';
 
 /**
  * Additional Animal APIs Integration
@@ -34,7 +33,7 @@ export interface ZooAnimal {
  * NOTE: Zoo Animal API is currently disabled due to CORS/404 errors
  * Returns empty array immediately without making any network requests
  */
-export async function getRandomZooAnimals(count: number = 10): Promise<ZooAnimal[]> {
+export async function getRandomZooAnimals(_count: number = 10): Promise<ZooAnimal[]> {
   // Zoo Animal API is currently down/broken (CORS/404 errors)
   // Return empty array immediately - no fetch calls will be made
   return [];
@@ -48,7 +47,7 @@ export async function getRandomZooAnimals(count: number = 10): Promise<ZooAnimal
  * NOTE: Zoo Animal API is currently disabled due to CORS/404 errors
  * Returns empty array immediately without making any network requests
  */
-export async function searchZooAnimals(name: string): Promise<ZooAnimal[]> {
+export async function searchZooAnimals(_name: string): Promise<ZooAnimal[]> {
   // Zoo Animal API is currently down/broken (CORS/404 errors)
   // Return empty array immediately - no fetch calls will be made
   return [];

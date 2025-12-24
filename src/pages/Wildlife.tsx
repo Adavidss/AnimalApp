@@ -14,7 +14,7 @@ export default function Wildlife() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
-  const [initialLoaded, setInitialLoaded] = useState(false);
+  const [_initialLoaded, setInitialLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -25,7 +25,7 @@ export default function Wildlife() {
   const categoryTheme = getCategoryTheme('wildlife');
   const PER_PAGE = 10;
   const [allAnimals, setAllAnimals] = useState<INatTaxon[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
+  const [_totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     loadAnimalsByType();
@@ -184,7 +184,7 @@ export default function Wildlife() {
             <div className="flex gap-4 justify-center">
               <div className="px-6 py-3 bg-white dark:bg-gray-800 rounded-lg shadow-md">
                 <div className="text-2xl font-bold" style={{ color: categoryTheme.primaryColor }}>
-                  {filteredAnimals.length}
+                  {allAnimals.length}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Species</div>
               </div>
@@ -288,7 +288,7 @@ export default function Wildlife() {
               <div className="flex justify-center py-12">
                 <Loader />
               </div>
-            ) : filteredAnimals.length === 0 ? (
+            ) : paginatedAnimals.length === 0 ? (
               <EmptyState
                 title="No animals found"
                 message="Try adjusting your search or filters"
@@ -348,7 +348,7 @@ export default function Wildlife() {
                             images: animal.default_photo?.medium_url ? [{
                               urls: {
                                 small: animal.default_photo.medium_url,
-                                regular: animal.default_photo.large_url || animal.default_photo.medium_url
+                                regular: animal.default_photo.medium_url
                               }
                             }] : []
                           };

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllDogBreeds, searchDogBreeds, DogBreed } from '../api/theDogApi';
+import { getAllDogBreeds, DogBreed } from '../api/theDogApi';
 import { getCategoryTheme } from '../utils/categories';
 import Loader from '../components/Loader';
 import { EmptyState } from '../components/ErrorState';

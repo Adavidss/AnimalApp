@@ -50,7 +50,7 @@ export default function AnimalDetail() {
       { 
         id: 'overview', 
         show: (animal.wikipedia?.extract) || 
-              (animal.characteristics && Object.entries(animal.characteristics).filter(([key, value]) => value && value !== 'N/A').length > 0)
+              (animal.characteristics && Object.entries(animal.characteristics).filter(([_key, value]) => value && value !== 'N/A').length > 0)
       },
       { 
         id: 'taxonomy', 
@@ -293,7 +293,7 @@ export default function AnimalDetail() {
                     label: 'Overview', 
                     icon: '📖',
                     show: (animal.wikipedia?.extract) || 
-                          (animal.characteristics && Object.entries(animal.characteristics).filter(([key, value]) => value && value !== 'N/A').length > 0)
+                          (animal.characteristics && Object.entries(animal.characteristics).filter(([_key, value]) => value && value !== 'N/A').length > 0)
                   },
                   { 
                     id: 'taxonomy', 
@@ -366,14 +366,14 @@ export default function AnimalDetail() {
                   )}
 
                   {/* Characteristics - only show if there are characteristics */}
-                  {animal.characteristics && Object.entries(animal.characteristics).filter(([key, value]) => value && value !== 'N/A').length > 0 && (
+                  {animal.characteristics && Object.entries(animal.characteristics).filter(([_key, value]) => value && value !== 'N/A').length > 0 && (
                     <div>
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                         Characteristics
                       </h3>
                       <div className="grid md:grid-cols-2 gap-4">
                         {Object.entries(animal.characteristics)
-                          .filter(([key, value]) => value && value !== 'N/A')
+                          .filter(([_key, value]) => value && value !== 'N/A')
                           .map(([key, value]) => (
                             <div
                               key={key}

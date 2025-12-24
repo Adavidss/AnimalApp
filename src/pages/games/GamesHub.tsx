@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { GameCard, FeaturedGameCard, CompactGameCard, GameCardProps } from '../../components/games/GameCard';
+import { GameCard, GameCardProps } from '../../components/games/GameCard';
 
 const GAMES: GameCardProps[] = [
   {

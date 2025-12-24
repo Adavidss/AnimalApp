@@ -2,14 +2,16 @@ import { Animal } from '../types/animal';
 import { API_KEYS, API_URLS, RATE_LIMIT, CACHE_DURATION } from '../utils/constants';
 import { getCache, setCache } from '../utils/cache';
 import { getINatSpeciesByName, searchINatSpecies, INatTaxon } from './inaturalist';
-import { searchGBIFByCommonName, GBIFSpecies } from './gbif';
+import { searchGBIFByCommonName } from './gbif';
+import { GBIFSpecies } from '../types/animal';
 // FishBase API disabled due to SSL certificate issues
 // import { searchFishSpecies, isFishSpecies } from './fishbase';
-import { getCatBreeds, CatBreed } from './additionalApis';
+import { getCatBreeds } from './additionalApis';
 // Zoo Animal API disabled due to CORS/404 errors
 // import { searchZooAnimals } from './additionalApis';
 import { searchDogBreeds, isDogBreed } from './theDogApi';
-import { searchByVernacular, WoRMSTaxon } from './worms';
+import { searchByVernacular } from './worms';
+import { WoRMSTaxon } from '../types/animal';
 
 /**
  * Fetch animals by name from API Ninjas with fallback to iNaturalist and FishBase
@@ -256,12 +258,15 @@ function isAnimal(animal: Animal): boolean {
  */
 function convertINatToAnimal(taxon: INatTaxon): Animal {
   return {
-    id: taxon.id.toString(),
     name: taxon.preferred_common_name || taxon.name,
     taxonomy: {
       scientific_name: taxon.name,
       kingdom: 'Animalia',
-      class: taxon.iconic_taxon_name || undefined,
+      phylum: '',
+      class: taxon.iconic_taxon_name || '',
+      order: '',
+      family: '',
+      genus: '',
     },
     locations: [],
     characteristics: {},
@@ -273,16 +278,15 @@ function convertINatToAnimal(taxon: INatTaxon): Animal {
  */
 function convertGBIFToAnimal(species: GBIFSpecies): Animal {
   return {
-    id: species.key.toString(),
     name: species.vernacularName || species.canonicalName || species.scientificName,
     taxonomy: {
       scientific_name: species.scientificName,
-      kingdom: species.kingdom,
-      phylum: species.phylum,
-      class: species.class,
-      order: species.order,
-      family: species.family,
-      genus: species.genus,
+      kingdom: species.kingdom || '',
+      phylum: species.phylum || '',
+      class: species.class || '',
+      order: species.order || '',
+      family: species.family || '',
+      genus: species.genus || '',
     },
     locations: [],
     characteristics: {},
@@ -294,16 +298,15 @@ function convertGBIFToAnimal(species: GBIFSpecies): Animal {
  */
 function convertWoRMSToAnimal(taxon: WoRMSTaxon): Animal {
   return {
-    id: taxon.AphiaID?.toString() || taxon.scientificname || '',
-    name: taxon.vernacular || taxon.scientificname || '',
+    name: taxon.scientificname || '',
     taxonomy: {
       scientific_name: taxon.scientificname || '',
-      kingdom: taxon.kingdom,
-      phylum: taxon.phylum,
-      class: taxon.class,
-      order: taxon.order,
-      family: taxon.family,
-      genus: taxon.genus,
+      kingdom: taxon.kingdom || '',
+      phylum: taxon.phylum || '',
+      class: taxon.class || '',
+      order: taxon.order || '',
+      family: taxon.family || '',
+      genus: taxon.genus || '',
     },
     locations: [],
     characteristics: {},
@@ -535,7 +538,6 @@ export function filterByHabitat(animals: Animal[], habitat: string): Animal[] {
 
   return animals.filter((animal) => {
     const animalHabitat = animal.characteristics.habitat?.toLowerCase() || '';
-    const locations = animal.locations.map((l) => l.toLowerCase()).join(' ');
 
     switch (habitat.toLowerCase()) {
       case 'land':

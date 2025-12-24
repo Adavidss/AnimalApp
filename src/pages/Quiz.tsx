@@ -160,9 +160,11 @@ export default function Quiz() {
     localStorage.setItem('animal_atlas_quiz_stats', JSON.stringify(newStats));
     
     // Track for achievements
-    const { trackQuizCompletion } = require('../utils/achievements');
-    trackQuizCompletion();
-    trackGamePlay();
+    import('../utils/achievements').then(({ trackQuizCompletion }) => {
+      trackQuizCompletion();
+    }).catch(() => {
+      // Ignore if achievements module not available
+    });
   };
 
   const getDifficultyColor = (difficulty: string) => {

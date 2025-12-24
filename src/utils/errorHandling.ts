@@ -322,7 +322,7 @@ export const safeLocalStorage = {
 /**
  * Debounced error reporter (prevents spam)
  */
-const errorReportQueue = new Map<string, NodeJS.Timeout>();
+const errorReportQueue = new Map<string, number>();
 
 export function reportErrorDebounced(error: unknown, key: string, delay: number = 5000): void {
   // Clear existing timeout for this error type

@@ -1,4 +1,4 @@
-import { EBirdObservation, EBirdRegion } from '../types/animal';
+import { EBirdObservation } from '../types/animal';
 import { API_KEYS, API_URLS, CACHE_DURATION } from '../utils/constants';
 import { getCache, setCache } from '../utils/cache';
 

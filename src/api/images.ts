@@ -1,14 +1,11 @@
 import { UnsplashImage } from '../types/animal';
 import { API_KEYS, API_URLS, FALLBACK_IMAGE, CACHE_DURATION } from '../utils/constants';
 import { getCache, setCache } from '../utils/cache';
-import { getRandomAnimalImages } from './randomAnimals';
 import { getINatPhotos } from './inaturalist';
 import { getRandomDogImages, convertDogImagesToUnsplashFormat } from './theDogApi';
 import { fetchWikipediaSummary } from './wikipedia';
 import {
   getRandomCatImages,
-  getRandomShibeImages,
-  getRandomBirdImages,
   convertToUnsplashFormat,
   detectAnimalType,
 } from './additionalApis';
@@ -343,7 +340,7 @@ export async function fetchUnsplashImages(
 /**
  * Generate fallback images when all APIs fail (DEPRECATED - returns empty)
  */
-function generateFallbackImages(query: string, count: number): UnsplashImage[] {
+function generateFallbackImages(_query: string, _count: number): UnsplashImage[] {
   // Don't use static fallback images as they get cached and shown for all animals
   // Components should handle empty image arrays with placeholder UI instead
   return [];

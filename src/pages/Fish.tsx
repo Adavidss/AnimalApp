@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { searchFishSpecies, getFishPictureUrl, FishSpecies } from '../api/fishbase';
 import { searchINatSpecies, INatTaxon } from '../api/inaturalist';
 import { getCategoryTheme } from '../utils/categories';
 import Loader from '../components/Loader';
@@ -14,7 +13,7 @@ export default function Fish() {
   const [fishSpecies, setFishSpecies] = useState<INatTaxon[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [initialLoaded, setInitialLoaded] = useState(false);
+  const [_initialLoaded, setInitialLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -281,7 +280,7 @@ export default function Fish() {
                               images: fish.default_photo?.medium_url ? [{
                                 urls: {
                                   small: fish.default_photo.medium_url,
-                                  regular: fish.default_photo.large_url || fish.default_photo.medium_url
+                                  regular: fish.default_photo.medium_url
                                 }
                               }] : []
                             };

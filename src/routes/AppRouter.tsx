@@ -183,7 +183,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
 export default function AppRouter() {
   return (
-    <BrowserRouter
+    <BrowserRouter basename="/AnimalApp"
       future={{
         v7_startTransition: true,
         v7_relativeSplatPath: true,

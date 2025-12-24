@@ -166,9 +166,6 @@ export async function getINatObservations(
       // Timeout or network error - return empty
       return [];
     }
-
-    setCache(cacheKey, results, CACHE_DURATION.ANIMAL_DATA);
-    return results;
   } catch (error) {
     if (import.meta.env.DEV) {
       console.debug('Error fetching iNaturalist observations:', error);

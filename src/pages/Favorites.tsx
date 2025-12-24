@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   getFavorites,
@@ -10,7 +10,6 @@ import {
 } from '../utils/favorites';
 import { getMainCategories, getCategoryTheme } from '../utils/categories';
 import { EmptyState } from '../components/ErrorState';
-import CollectionProgress from '../components/CollectionProgress';
 import { trackFavoriteForAchievements } from '../utils/achievements';
 
 export default function Favorites() {

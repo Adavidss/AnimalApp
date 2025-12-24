@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchUnsplashImages } from '../../api/images';
 import { SizeBar } from '../../components/games/SizeBar';
 import {
-  calculateScore,
   saveHighScore,
   getHighScore,
   playSound,

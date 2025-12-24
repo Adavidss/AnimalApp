@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAnimal } from '../context/AnimalContext';
 import SearchBar from '../components/SearchBar';
 import Filters from '../components/Filters';
 import AnimalCard from '../components/AnimalCard';
-import Loader, { SkeletonGrid } from '../components/Loader';
+import { SkeletonGrid } from '../components/Loader';
 import { EmptyState } from '../components/ErrorState';
 import Pagination from '../components/Pagination';
-import { searchAnimals, filterByCategory, filterByHabitat } from '../api/animals';
+import { searchAnimals } from '../api/animals';
 import { AnimalFilters, EnrichedAnimal, Animal } from '../types/animal';
 import { isEndangered } from '../api/iucn';
 import { getDidYouMeanSuggestion } from '../utils/searchHelpers';
 
 export default function Explorer() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { filters, setFilters, enrichAnimal } = useAnimal();
   const [animals, setAnimals] = useState<EnrichedAnimal[]>([]);
   const [allAnimals, setAllAnimals] = useState<EnrichedAnimal[]>([]); // Store original results
@@ -299,7 +299,7 @@ export default function Explorer() {
     // Apply endangered filter
     if (appliedFilters.endangeredOnly) {
       filtered = filtered.filter((animal) =>
-        isEndangered(animal.conservationStatus?.category || null)
+        animal.conservationStatus && isEndangered(animal.conservationStatus)
       );
     }
 

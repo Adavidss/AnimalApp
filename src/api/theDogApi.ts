@@ -178,7 +178,7 @@ export async function getRandomDogImages(limit: number = 10): Promise<DogImage[]
  * Convert Dog API images to Unsplash format
  */
 export function convertDogImagesToUnsplashFormat(images: DogImage[]): UnsplashImage[] {
-  return images.map((img, index) => ({
+  return images.map((img) => ({
     id: img.id,
     urls: {
       raw: img.url,

@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { getCatBreeds, getCatImagesByBreed, CatBreed } from '../api/additionalApis';
 import { getCategoryTheme } from '../utils/categories';
 import Loader from '../components/Loader';

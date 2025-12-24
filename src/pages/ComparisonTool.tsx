@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAnimal } from '../context/AnimalContext';
 import { EnrichedAnimal } from '../types/animal';
 import Loader from '../components/Loader';
 import { ComparisonChart, ChartData } from '../components/ComparisonChart';
 import {
-  getAllPresets,
   getPresetById,
   getPresetCategories,
   getPresetsByCategory,
   trackPresetUsage,
-  ComparisonPreset
 } from '../utils/comparisonPresets';
 import { useToast } from '../components/Toast';
 import { getAutocompleteSuggestions } from '../utils/searchHelpers';
@@ -245,7 +243,7 @@ export default function ComparisonTool() {
       case 'location':
         return animal.locations?.[0] || '-';
       case 'conservation':
-        return animal.iucn?.status || '-';
+        return animal.conservationStatus?.category || '-';
       default:
         return '-';
     }

@@ -606,7 +606,6 @@ function trackCategoryView(animalClass: string): void {
   localStorage.setItem(categoryKey, categoryCount.toString());
   
   const data = getAchievementData();
-  const wasUnlocked = data[achievementId]?.unlocked || false;
   data[achievementId] = { progress: categoryCount, unlocked: categoryCount >= 10 };
   
   saveAchievementData(data);

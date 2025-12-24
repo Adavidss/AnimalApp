@@ -8,8 +8,6 @@ import {
   getAnimalCount
 } from '../../data/soundGameAnimals';
 import {
-  formatTime,
-  calculateScore,
   saveHighScore,
   getHighScore,
   playSound,

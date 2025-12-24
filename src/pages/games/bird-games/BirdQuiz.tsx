@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { searchINatSpecies } from '../../../api/inaturalist';
 import Loader from '../../../components/Loader';
@@ -35,7 +35,7 @@ export default function BirdQuiz() {
       // Pick random correct bird
       const correctBird = birds[Math.floor(Math.random() * birds.length)];
       const correct: Bird = {
-        id: correctBird.id || String(Math.random()),
+        id: correctBird.id ? String(correctBird.id) : String(Math.random()),
         name: correctBird.preferred_common_name || correctBird.name || 'Unknown Bird',
         preferred_common_name: correctBird.preferred_common_name || correctBird.name,
         sciName: correctBird.name,

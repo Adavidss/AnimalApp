@@ -252,9 +252,9 @@ export function incrementGamePlayCount(gameName: string): number {
     localStorage.setItem(key, count.toString());
     
     // Track for achievements after incrementing
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        const { trackGamePlay } = require('./achievements');
+        const { trackGamePlay } = await import('./achievements');
         trackGamePlay();
       } catch (e) {
         // Ignore if achievements module not available
