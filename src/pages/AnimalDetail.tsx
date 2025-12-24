@@ -683,9 +683,11 @@ export default function AnimalDetail() {
                 </div>
               )}
 
-              {/* Conservation Tab - only show if conservation data exists */}
-              {activeTab === 'conservation' && (status || animal.conservationStatus?.category) && (
+              {/* Conservation Tab - show conservation section */}
+              {activeTab === 'conservation' && (
                 <div className="space-y-6">
+                  {(status || animal.conservationStatus) ? (
+                    <>
                   {status && (
                     <div>
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
@@ -709,6 +711,32 @@ export default function AnimalDetail() {
                           </div>
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {!status && animal.conservationStatus && (
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                        Conservation Status
+                      </h3>
+                      <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-6">
+                        <p className="text-gray-900 dark:text-white font-semibold">
+                          Status: {animal.conservationStatus.category || 'Unknown'}
+                        </p>
+                        {animal.conservationStatus.population_trend && (
+                          <p className="text-gray-600 dark:text-gray-400 mt-2">
+                            Population Trend: {animal.conservationStatus.population_trend}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                    </>
+                  ) : (
+                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-12 text-center">
+                      <p className="text-gray-600 dark:text-gray-400">
+                        No conservation status information available for this species
+                      </p>
                     </div>
                   )}
 
