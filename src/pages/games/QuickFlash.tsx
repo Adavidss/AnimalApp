@@ -138,15 +138,26 @@ export default function QuickFlash() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
             <div className="text-center min-h-[400px] flex flex-col items-center justify-center">
               {/* Flash Image */}
-              {showImage && imageUrl && (
+              {showImage && imageUrl && !imageError ? (
                 <div className="animate-fade-in">
                   <img
                     src={imageUrl}
                     alt="Animal"
                     className="max-w-full h-64 md:h-96 mx-auto rounded-lg shadow-lg object-contain"
+                    onError={() => {
+                      setImageError(true);
+                    }}
                   />
                 </div>
-              )}
+              ) : showImage && animal ? (
+                <div className="animate-fade-in mb-6 w-full max-w-2xl mx-auto">
+                  <div className="w-full h-64 md:h-96 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg shadow-lg flex items-center justify-center">
+                    <span className="text-white text-4xl font-bold text-center px-4">
+                      {animal.name}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
 
               {/* Loading/Ready State */}
               {!showImage && !inputVisible && (

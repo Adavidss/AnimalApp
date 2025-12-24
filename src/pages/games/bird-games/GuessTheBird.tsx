@@ -140,7 +140,7 @@ export default function GuessTheBird() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
             {gameType === 'image' ? (
               <>
-                {imageUrl && (
+                {imageUrl && !imageError ? (
                   <div className="mb-6">
                     <img
                       src={imageUrl}
@@ -148,12 +148,22 @@ export default function GuessTheBird() {
                       className={`w-full max-w-2xl mx-auto rounded-lg ${
                         blurred ? 'filter blur-lg' : ''
                       } transition-all duration-500`}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x400?text=Bird+Image';
+                      onError={() => {
+                        setImageError(true);
                       }}
                     />
                   </div>
-                )}
+                ) : currentBird ? (
+                  <div className="mb-6 w-full max-w-2xl mx-auto">
+                    <div className={`w-full h-64 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg shadow-lg flex items-center justify-center ${
+                      blurred && !revealed ? 'filter blur-lg' : ''
+                    } transition-all duration-500`}>
+                      <span className="text-white text-4xl font-bold text-center px-4">
+                        {currentBird.name}
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
 
                 {/* Blur Toggle */}
                 {!revealed && (
