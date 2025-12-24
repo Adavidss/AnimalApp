@@ -80,6 +80,16 @@ export default function BirdSoundMatch() {
           addDebugInfo(`Received ${sounds?.length || 0} recordings for ${scientificName}`);
           
           if (sounds && sounds.length > 0) {
+            addDebugInfo(`✅ Found ${sounds.length} total recordings`);
+            
+            // Log all recording qualities
+            const qualityCounts: { [key: string]: number } = {};
+            sounds.forEach((s: any) => {
+              const q = s.q || 'Unknown';
+              qualityCounts[q] = (qualityCounts[q] || 0) + 1;
+            });
+            addDebugInfo(`Quality breakdown: ${Object.entries(qualityCounts).map(([q, c]) => `${q}=${c}`).join(', ')}`);
+            
             // Filter for quality recordings (A, B, C) like Bird-App does
             const goodRecordings = sounds.filter((s: any) => 
               s.q && ['A', 'B', 'C'].includes(s.q)
@@ -87,6 +97,7 @@ export default function BirdSoundMatch() {
             
             addDebugInfo(`Found ${goodRecordings.length} good quality recordings (A/B/C)`);
             
+            // Use good recordings if available, otherwise use all (like Bird-App)
             const recordingsToUse = goodRecordings.length > 0 ? goodRecordings : sounds;
             
             if (recordingsToUse.length === 0) {

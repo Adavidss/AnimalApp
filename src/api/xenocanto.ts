@@ -131,18 +131,27 @@ export async function fetchAnimalSounds(
   const cached = getCache<XenoCantoRecording[]>(cacheKey);
 
   if (cached) {
+    if (import.meta.env.DEV) {
+      console.log(`[XenoCanto] Cache hit for: ${query} (${cached.length} recordings)`);
+    }
     return cached;
   }
 
   try {
-    // Try multiple query formats for better results
+    if (import.meta.env.DEV) {
+      console.log(`[XenoCanto] Fetching sounds for: ${query}`);
+    }
+
+    // Try multiple query formats for better results (matching Bird-App logic)
     const queries: string[] = [];
+    const parts = query.trim().split(/\s+/);
     
     // If query looks like scientific name (two words), try gen:sp format
-    const parts = query.trim().split(/\s+/);
-    if (parts.length === 2) {
-      queries.push(`gen:${parts[0]}+sp:${parts[1]}`);
-      queries.push(`${parts[0]} ${parts[1]}`); // Also try as regular search
+    if (parts.length >= 2) {
+      const genus = parts[0];
+      const species = parts.slice(1).join(' ');
+      queries.push(`gen:${genus}+sp:${species}`); // Primary format
+      queries.push(`gen:${genus}`); // Also try just genus (like Bird-App)
     } else {
       // For common names or single words, try as genus or full search
       queries.push(query);
@@ -153,14 +162,25 @@ export async function fetchAnimalSounds(
 
     for (const searchQuery of queries) {
       try {
+        if (import.meta.env.DEV) {
+          console.log(`[XenoCanto] Trying query: ${searchQuery}`);
+        }
+
         const apiUrl = buildXenoCantoUrl(searchQuery, 1, Math.min(limit * 2, 100));
         
+        if (import.meta.env.DEV) {
+          console.log(`[XenoCanto] API URL: ${apiUrl.substring(0, 150)}...`);
+        }
+
         // Try CORS proxy first
         let data = await fetchWithProxy(apiUrl);
         
         // If proxy fails, try direct fetch
         if (!data) {
           try {
+            if (import.meta.env.DEV) {
+              console.log(`[XenoCanto] Proxy failed, trying direct fetch...`);
+            }
             const response = await fetch(apiUrl, {
               method: 'GET',
               headers: {
@@ -171,63 +191,116 @@ export async function fetchAnimalSounds(
             
             if (response.ok) {
               data = await response.json();
+              if (import.meta.env.DEV) {
+                console.log(`[XenoCanto] Direct fetch successful`);
+              }
             } else {
+              if (import.meta.env.DEV) {
+                console.warn(`[XenoCanto] Direct fetch failed: ${response.status} ${response.statusText}`);
+              }
               // Check for API errors
               if (response.status === 400 || response.status === 404) {
                 continue; // Try next query format
               }
               throw new Error(`xeno-canto API returned ${response.status}`);
             }
-          } catch (directError) {
+          } catch (directError: any) {
+            if (import.meta.env.DEV) {
+              console.warn(`[XenoCanto] Direct fetch error:`, directError?.message || directError);
+            }
             continue; // Try next query format
+          }
+        } else {
+          if (import.meta.env.DEV) {
+            console.log(`[XenoCanto] Proxy fetch successful`);
           }
         }
 
-        // Check for API errors in response
-        if (data && data.error) {
-          // client_error and not_found are expected for animals without sounds - handle silently
-          // Don't log these expected errors
-          if (data.error === 'client_error' || data.error === 'not_found' || data.error === 'No results') {
-            continue; // Try next query format silently
-          }
-          // Only log unexpected errors in development
+        // Check if we got data
+        if (!data) {
           if (import.meta.env.DEV) {
-            console.debug('xeno-canto API error:', data.error);
+            console.warn(`[XenoCanto] No data returned for query: ${searchQuery}`);
           }
           continue;
         }
 
-        if (data && data.recordings && data.recordings.length > 0) {
+        // Check for API errors in response
+        if (data.error) {
+          if (import.meta.env.DEV) {
+            console.log(`[XenoCanto] API error response:`, data.error);
+          }
+          // client_error and not_found are expected for animals without sounds
+          if (data.error === 'client_error' || data.error === 'not_found' || data.error === 'No results') {
+            continue; // Try next query format
+          }
+          // Log unexpected errors
+          if (import.meta.env.DEV) {
+            console.warn(`[XenoCanto] Unexpected API error:`, data.error);
+          }
+          continue;
+        }
+
+        // Check for recordings in response
+        if (data.recordings && Array.isArray(data.recordings)) {
+          if (import.meta.env.DEV) {
+            console.log(`[XenoCanto] Found ${data.recordings.length} recordings for query: ${searchQuery}`);
+          }
+
           const processed = processRecordings(data.recordings);
           allRecordings.push(...processed);
           
-          // If we have enough recordings, break
+          // If we have enough recordings, break (like Bird-App does)
           if (allRecordings.length >= limit) {
+            if (import.meta.env.DEV) {
+              console.log(`[XenoCanto] Found enough recordings, stopping search`);
+            }
             break;
           }
+        } else {
+          if (import.meta.env.DEV) {
+            console.warn(`[XenoCanto] No recordings array in response for query: ${searchQuery}`, data);
+          }
         }
-      } catch (err) {
-        console.warn(`Error fetching with query "${searchQuery}":`, err);
+      } catch (err: any) {
+        if (import.meta.env.DEV) {
+          console.warn(`[XenoCanto] Error fetching with query "${searchQuery}":`, err?.message || err);
+        }
         continue;
       }
     }
 
-    // Remove duplicates by ID and filter for quality
+    // Remove duplicates by ID
     const uniqueRecordings = Array.from(
       new Map(allRecordings.map(rec => [rec.id, rec])).values()
     );
 
-    const filtered = uniqueRecordings
-      .filter((rec) => rec.q && ['A', 'B', 'C'].includes(rec.q)) // Only good quality
-      .slice(0, limit);
-
-    // Cache results
-    if (filtered.length > 0) {
-      setCache(cacheKey, filtered, CACHE_DURATION.SOUNDS);
+    if (import.meta.env.DEV) {
+      console.log(`[XenoCanto] Total unique recordings: ${uniqueRecordings.length}`);
     }
 
-    return filtered;
-  } catch (error) {
+    // Don't filter by quality initially - return all recordings found
+    // (The game will filter for quality itself)
+    const result = uniqueRecordings.slice(0, limit);
+
+    // Cache results (even if empty, but with shorter duration)
+    if (result.length > 0) {
+      setCache(cacheKey, result, CACHE_DURATION.SOUNDS);
+      if (import.meta.env.DEV) {
+        console.log(`[XenoCanto] Cached ${result.length} recordings for: ${query}`);
+      }
+    } else {
+      // Cache empty results for shorter time to allow retries
+      setCache(cacheKey, [], CACHE_DURATION.SOUNDS / 2);
+      if (import.meta.env.DEV) {
+        console.warn(`[XenoCanto] No recordings found for: ${query}`);
+      }
+    }
+
+    return result;
+  } catch (error: any) {
+    if (import.meta.env.DEV) {
+      console.error(`[XenoCanto] Fatal error fetching sounds for "${query}":`, error);
+    }
     return handleApiErrorSilently(error, 'xeno-canto', []);
   }
 }
