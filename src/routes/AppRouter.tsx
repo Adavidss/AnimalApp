@@ -33,6 +33,8 @@ import NameThatAnimal from '../pages/games/NameThatAnimal';
 import AnimalHangman from '../pages/games/AnimalHangman';
 import TrueFalse from '../pages/games/TrueFalse';
 import QuickFlash from '../pages/games/QuickFlash';
+import AnimalSort from '../pages/games/AnimalSort';
+import AnimalPairs from '../pages/games/AnimalPairs';
 
 function Layout({ children }: { children: React.ReactNode }) {
   const { darkMode, toggleDarkMode } = useAnimal();
@@ -233,6 +235,8 @@ export default function AppRouter() {
           <Route path="/games/animal-hangman" element={<AnimalHangman />} />
           <Route path="/games/true-false" element={<TrueFalse />} />
           <Route path="/games/quick-flash" element={<QuickFlash />} />
+          <Route path="/games/animal-sort" element={<AnimalSort />} />
+          <Route path="/games/animal-pairs" element={<AnimalPairs />} />
           <Route path="/games/bird-games/guess" element={<GuessTheBird />} />
           <Route path="/games/bird-games/quiz" element={<BirdQuiz />} />
           <Route path="/games/bird-games/bird-sound-match" element={<BirdSoundMatch />} />

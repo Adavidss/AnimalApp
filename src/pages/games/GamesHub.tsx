@@ -233,7 +233,7 @@ export default function GamesHub() {
             <div className="grid grid-cols-3 gap-3 md:gap-4 max-w-2xl mx-auto">
               <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 md:p-4">
                 <div className="text-2xl md:text-3xl font-bold text-white mb-1">
-                  {GAMES.length + 3}
+                  {GAMES.length + 7}
                 </div>
                 <div className="text-xs md:text-sm text-white/80">Games</div>
               </div>
