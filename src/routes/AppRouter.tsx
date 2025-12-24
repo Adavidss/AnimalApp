@@ -187,38 +187,6 @@ function Layout({ children }: { children: React.ReactNode }) {
                   </svg>
                 </button>
               </div>
-                      <Link to="/explorer" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors rounded-t-lg touch-manipulation">
-                        <span className="text-xl">🔍</span>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">All Animals</span>
-                      </Link>
-                      <div className="border-t border-gray-200 dark:border-gray-700"></div>
-                      <Link to="/dogs" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
-                        <span className="text-xl">🐕</span>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Dogs</span>
-                      </Link>
-                      <Link to="/cats" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
-                        <span className="text-xl">🐈</span>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Cats</span>
-                      </Link>
-                      <Link to="/birds" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
-                        <span className="text-xl">🐦</span>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Birds</span>
-                      </Link>
-                      <Link to="/wildlife" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
-                        <span className="text-xl">🦁</span>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Wildlife</span>
-                      </Link>
-                      <Link to="/fish" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
-                        <span className="text-xl">🐠</span>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Aquatic</span>
-                      </Link>
-                      <Link to="/conservation" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors rounded-b-lg touch-manipulation">
-                        <span className="text-xl">🛡️</span>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Conservation Status</span>
-                      </Link>
-                    </div>
-                  </>
-                )}
               <Link to="/favorites" className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                 ⭐ Favorites
               </Link>
@@ -229,6 +197,51 @@ function Layout({ children }: { children: React.ReactNode }) {
                 🎮 Games
               </Link>
             </nav>
+            
+            {/* Mobile Dropdown - rendered outside nav for better positioning */}
+            {showAnimalsDropdown && (
+              <>
+                {/* Backdrop to close dropdown on click outside */}
+                <div 
+                  className="fixed inset-0 z-[100] bg-black/20"
+                  onClick={() => setShowAnimalsDropdown(false)}
+                />
+                <div 
+                  className="fixed left-4 right-4 top-24 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[101] max-h-[calc(100vh-8rem)] overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Link to="/explorer" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors rounded-t-lg touch-manipulation">
+                    <span className="text-xl">🔍</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">All Animals</span>
+                  </Link>
+                  <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                  <Link to="/dogs" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
+                    <span className="text-xl">🐕</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Dogs</span>
+                  </Link>
+                  <Link to="/cats" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
+                    <span className="text-xl">🐈</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Cats</span>
+                  </Link>
+                  <Link to="/birds" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
+                    <span className="text-xl">🐦</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Birds</span>
+                  </Link>
+                  <Link to="/wildlife" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
+                    <span className="text-xl">🦁</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Wildlife</span>
+                  </Link>
+                  <Link to="/fish" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
+                    <span className="text-xl">🐠</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Aquatic</span>
+                  </Link>
+                  <Link to="/conservation" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors rounded-b-lg touch-manipulation">
+                    <span className="text-xl">🛡️</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Conservation Status</span>
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
