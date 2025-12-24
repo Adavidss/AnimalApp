@@ -13,7 +13,6 @@ import Reptiles from '../pages/Reptiles';
 import Wildlife from '../pages/Wildlife';
 import Favorites from '../pages/Favorites';
 import Achievements from '../pages/Achievements';
-import ComparisonTool from '../pages/ComparisonTool';
 import Quiz from '../pages/Quiz';
 import ApiTest from '../pages/ApiTest';
 import { NotFound } from '../components/ErrorState';
@@ -224,7 +223,6 @@ export default function AppRouter() {
           <Route path="/wildlife" element={<Wildlife />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/achievements" element={<Achievements />} />
-          <Route path="/compare" element={<ComparisonTool />} />
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/games" element={<GamesHub />} />
           <Route path="/games/memory-match" element={<MemoryMatch />} />

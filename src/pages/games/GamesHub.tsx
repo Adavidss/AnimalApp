@@ -68,22 +68,6 @@ const GAMES: GameCardProps[] = [
     ]
   },
   {
-    id: 'compare',
-    title: 'Compare Animals',
-    description: 'Compare characteristics, habitats, and behaviors side-by-side!',
-    icon: '⚖️',
-    difficulty: 'easy',
-    estimatedTime: '5-10 min',
-    path: '/compare',
-    gradient: 'from-indigo-500 to-purple-500',
-    features: [
-      'Side-by-side comparisons',
-      'Visual charts',
-      'Multiple animals',
-      'Detailed analysis'
-    ]
-  },
-  {
     id: 'animal_trivia',
     title: 'Animal Trivia',
     description: 'Test your knowledge with fun animal trivia questions!',
