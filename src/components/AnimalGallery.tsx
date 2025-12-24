@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { UnsplashImage } from '../types/animal';
 import { FALLBACK_IMAGE } from '../utils/constants';
 

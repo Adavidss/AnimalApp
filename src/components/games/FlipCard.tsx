@@ -15,13 +15,13 @@ export function FlipCard({
   id,
   frontImage,
   frontText,
-  backImage = '/card-back.png', // Default back pattern
+  backImage: _backImage = '/card-back.png', // Default back pattern
   isFlipped,
   isMatched,
   onClick,
   disabled = false
 }: FlipCardProps) {
-  const [shouldAnimate, setShouldAnimate] = useState(false);
+  const [_shouldAnimate, setShouldAnimate] = useState(false);
 
   useEffect(() => {
     if (isFlipped) {
@@ -81,7 +81,7 @@ export function FlipCard({
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .flip-card {
           perspective: 1000px;
           cursor: pointer;

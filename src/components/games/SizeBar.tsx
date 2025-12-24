@@ -25,7 +25,7 @@ export function SizeBar({
   showResult = false,
   correctAnswer,
   userAnswer,
-  onReveal
+  onReveal: _onReveal
 }: SizeBarProps) {
   const [animateReveal, setAnimateReveal] = useState(false);
 

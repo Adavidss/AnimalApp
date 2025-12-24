@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { EBirdObservation } from '../types/animal';
 import { calculateFrequency } from '../api/ebird';
 
@@ -9,7 +9,7 @@ interface BirdSightingsProps {
 
 export default function BirdSightings({ observations, speciesName }: BirdSightingsProps) {
   const [sortBy, setSortBy] = useState<'date' | 'count' | 'location'>('date');
-  const [showMap, setShowMap] = useState(false);
+  const [_showMap, _setShowMap] = useState(false);
 
   if (!observations || observations.length === 0) {
     return (

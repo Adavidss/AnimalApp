@@ -116,17 +116,17 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
 
 // Utility functions for quick toast usage
 export const toast = {
-  success: (message: string, duration?: number) => {
+  success: (message: string, _duration?: number) => {
     // This will be called from components using useToast hook
     console.log('Success:', message);
   },
-  error: (message: string, duration?: number) => {
+  error: (message: string, _duration?: number) => {
     console.error('Error:', message);
   },
-  warning: (message: string, duration?: number) => {
+  warning: (message: string, _duration?: number) => {
     console.warn('Warning:', message);
   },
-  info: (message: string, duration?: number) => {
+  info: (message: string, _duration?: number) => {
     console.info('Info:', message);
   }
 };

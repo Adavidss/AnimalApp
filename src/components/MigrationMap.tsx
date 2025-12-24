@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { MovebankLocation, MovebankStudy } from '../types/animal';
-import { calculateMigrationDistance, getMigrationBounds, groupLocationsByPeriod } from '../api/movebank';
+import { calculateMigrationDistance, getMigrationBounds } from '../api/movebank';
 import { MAP_CONFIG } from '../utils/constants';
 
 interface MigrationMapProps {

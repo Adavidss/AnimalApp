@@ -1,4 +1,3 @@
-import React from 'react';
 
 interface PaginationProps {
   currentPage: number;
@@ -14,7 +13,7 @@ export default function Pagination({
   currentPage,
   totalPages,
   onPageChange,
-  itemsPerPage,
+  itemsPerPage: _itemsPerPage,
   totalItems,
   showingStart,
   showingEnd,

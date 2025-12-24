@@ -1,4 +1,3 @@
-import React from 'react';
 import { AnimalFilters, AnimalCategory, HabitatType } from '../types/animal';
 import { ANIMAL_CATEGORIES, HABITAT_TYPES } from '../utils/constants';
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import { AnimalFact } from '../data/animalFacts';
 
 interface FactCardProps {

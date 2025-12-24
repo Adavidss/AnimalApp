@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAnimal } from '../context/AnimalContext';
 import AnimalGallery from '../components/AnimalGallery';
@@ -6,7 +6,7 @@ import MapView from '../components/MapView';
 import SoundPlayer from '../components/SoundPlayer';
 import MigrationMap from '../components/MigrationMap';
 import SizeVisualization from '../components/SizeVisualization';
-import Loader, { SkeletonDetail } from '../components/Loader';
+import { SkeletonDetail } from '../components/Loader';
 import ErrorState from '../components/ErrorState';
 import { fetchAnimalByName } from '../api/animals';
 import { CONSERVATION_STATUS } from '../utils/constants';

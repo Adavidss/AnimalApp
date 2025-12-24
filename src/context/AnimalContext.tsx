@@ -1,16 +1,14 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { EnrichedAnimal, AnimalFilters, LoadingState } from '../types/animal';
 import { getDailyAnimal, setDailyAnimal } from '../utils/cache';
 import { getRandomAnimal } from '../api/animals';
 import { fetchWikipediaSummary } from '../api/wikipedia';
 import { fetchUnsplashImages } from '../api/images';
 import { fetchIUCNStatus } from '../api/iucn';
-import { searchGBIFSpecies, fetchGBIFOccurrences } from '../api/gbif';
+import { searchGBIFSpecies } from '../api/gbif';
 import { fetchAnimalSounds } from '../api/xenocanto';
-import { searchMovebankStudies, getMovebankLocations } from '../api/movebank';
-import { getRecentObservations, searchSpecies } from '../api/ebird';
-import { searchMarineSpecies, getMarineDistribution, getVernacularNames } from '../api/worms';
-import { getINatObservations, getINatSpeciesByName } from '../api/inaturalist';
+import { searchMarineSpecies } from '../api/worms';
+import { getINatSpeciesByName } from '../api/inaturalist';
 // FishBase API disabled due to SSL certificate issues
 // import { searchFishSpecies, getFishEcology, isFishSpecies } from '../api/fishbase';
 

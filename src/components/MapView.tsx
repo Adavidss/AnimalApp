@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { GBIFOccurrence } from '../types/animal';
 import { MAP_CONFIG } from '../utils/constants';

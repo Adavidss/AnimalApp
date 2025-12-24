@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { WoRMSTaxon, WoRMSDistribution } from '../types/animal';
 import { getHabitatTypes, isExtinct, getFullScientificName, getWormsUrl, getDistributionLocations } from '../api/worms';
 
