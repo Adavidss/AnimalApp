@@ -23,7 +23,6 @@ export default function Fish() {
 
   const categoryTheme = getCategoryTheme('fish');
   const PER_PAGE = 10;
-  const [allFishSpecies, setAllFishSpecies] = useState<INatTaxon[]>([]);
 
   useEffect(() => {
     loadFishByPage();
@@ -32,13 +31,8 @@ export default function Fish() {
   const loadFishByPage = async () => {
     setLoading(true);
     try {
+      // Only load 10 animals per page - don't accumulate
       const results = await searchINatSpecies('actinopterygii', currentPage, PER_PAGE);
-      if (currentPage === 1) {
-        setAllFishSpecies(results);
-      } else {
-        // Append new results to existing ones
-        setAllFishSpecies(prev => [...prev, ...results]);
-      }
       setFishSpecies(results);
       setHasMore(results.length === PER_PAGE);
       setInitialLoaded(true);
@@ -78,7 +72,6 @@ export default function Fish() {
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       setCurrentPage(1);
-      setAllFishSpecies([]);
       loadFishByPage();
       return;
     }
@@ -90,7 +83,6 @@ export default function Fish() {
     try {
       const results = await searchINatSpecies(searchQuery + ' fish', 1, PER_PAGE);
       setFishSpecies(results);
-      setAllFishSpecies(results);
       setHasMore(results.length === PER_PAGE);
     } catch (error) {
       console.error('Error searching fish:', error);
@@ -105,14 +97,9 @@ export default function Fish() {
     setShowSuggestions(false);
   };
 
-  // For browsing (no search), show accumulated results; for search, show current page results
-  const displayFish = searchQuery.trim() ? fishSpecies : allFishSpecies;
-  const totalPages = searchQuery.trim() 
-    ? Math.ceil((hasMore ? (currentPage * PER_PAGE) : fishSpecies.length) / PER_PAGE)
-    : hasMore ? currentPage + 1 : currentPage;
-  const paginatedFish = searchQuery.trim() 
-    ? fishSpecies.slice(0, PER_PAGE)
-    : displayFish.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+  // Only show current page of fish - no accumulation
+  const totalPages = Math.ceil((hasMore ? (currentPage * PER_PAGE) : fishSpecies.length) / PER_PAGE);
+  const paginatedFish = fishSpecies; // Already 10 per page from API
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -362,17 +349,15 @@ export default function Fish() {
                   totalPages={totalPages}
                   onPageChange={(page) => {
                     setCurrentPage(page);
-                    if (!searchQuery.trim() && page > allFishSpecies.length / PER_PAGE) {
-                      // Need to load more data
-                      loadFishByPage();
+                    // Load new page when page changes
+                    if (page !== currentPage) {
+                      setCurrentPage(page);
                     }
                   }}
                   itemsPerPage={PER_PAGE}
-                  totalItems={searchQuery.trim() 
-                    ? (hasMore ? currentPage * PER_PAGE : fishSpecies.length)
-                    : displayFish.length}
+                  totalItems={hasMore ? currentPage * PER_PAGE : fishSpecies.length}
                   showingStart={(currentPage - 1) * PER_PAGE + 1}
-                  showingEnd={Math.min(currentPage * PER_PAGE, displayFish.length)}
+                  showingEnd={Math.min(currentPage * PER_PAGE, fishSpecies.length)}
                 />
               </>
             )}

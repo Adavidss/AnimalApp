@@ -24,6 +24,7 @@ export default function Conservation() {
     loadAnimals();
   }, [selectedStatus, page]);
 
+
   const loadAnimals = async () => {
     setLoading(true);
     setError(null);
@@ -38,11 +39,16 @@ export default function Conservation() {
         'Vaquita', 'Amur Leopard', 'Sumatran Tiger', 'Mountain Gorilla', 'Cross River Gorilla'
       ];
 
-      // Search for animals
+      // Search for animals - limit to avoid crashes
       const allResults: EnrichedAnimal[] = [];
       const seenNames = new Set<string>();
 
-      for (const query of endangeredExamples.slice(0, 20)) {
+      // Only load 10 animals at a time based on page
+      const startIndex = (page - 1) * PER_PAGE;
+      const endIndex = startIndex + PER_PAGE;
+      const queriesToProcess = endangeredExamples.slice(startIndex, endIndex);
+
+      for (const query of queriesToProcess) {
         try {
           const results = await searchAnimals(query);
           for (const animal of results) {
@@ -82,16 +88,8 @@ export default function Conservation() {
         }
       }
 
-      // Filter by status if needed
-      let filtered = allResults;
-      if (selectedStatus !== 'all') {
-        filtered = allResults.filter(animal => 
-          animal.conservationStatus?.category === selectedStatus
-        );
-      }
-
       // Sort by status severity (most endangered first)
-      filtered.sort((a, b) => {
+      allResults.sort((a, b) => {
         const statusOrder: Record<string, number> = {
           'EX': 0, 'EW': 1, 'CR': 2, 'EN': 3, 'VU': 4, 'NT': 5, 'LC': 6, 'DD': 7, 'NE': 8
         };
@@ -100,7 +98,7 @@ export default function Conservation() {
         return statusOrder[aStatus] - statusOrder[bStatus];
       });
 
-      setAnimals(filtered);
+      setAnimals(allResults);
     } catch (err) {
       console.error('Error loading conservation animals:', err);
       setError('Failed to load animals. Please try again.');
@@ -109,12 +107,9 @@ export default function Conservation() {
     }
   };
 
-  const paginatedAnimals = animals.slice(
-    (page - 1) * PER_PAGE,
-    page * PER_PAGE
-  );
-
-  const totalPages = Math.ceil(animals.length / PER_PAGE);
+  // Animals are already paginated from loadAnimals, so use directly
+  const paginatedAnimals = animals;
+  const totalPages = Math.ceil(30 / PER_PAGE); // Total potential animals / per page
 
   const statusList: ConservationStatus[] = ['CR', 'EN', 'VU', 'NT', 'LC', 'DD', 'EX', 'EW', 'NE'];
 
@@ -146,7 +141,7 @@ export default function Conservation() {
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
-              All ({animals.length})
+              All
             </button>
             {statusList.map((status: ConservationStatus) => {
               const statusInfo = CONSERVATION_STATUS[status];

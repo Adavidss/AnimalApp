@@ -24,8 +24,6 @@ export default function Wildlife() {
 
   const categoryTheme = getCategoryTheme('wildlife');
   const PER_PAGE = 10;
-  const [allAnimals, setAllAnimals] = useState<INatTaxon[]>([]);
-  const [_totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     loadAnimalsByType();
@@ -41,18 +39,8 @@ export default function Wildlife() {
       else if (selectedType === 'Amphibia') query = 'amphibia';
       else if (selectedType === 'all') query = 'animalia';
 
+      // Only load 10 animals per page - don't accumulate
       const results = await searchINatSpecies(query, currentPage, PER_PAGE);
-      if (currentPage === 1) {
-        setAllAnimals(results);
-        setTotalCount(results.length);
-      } else {
-        // Append new results to existing ones
-        setAllAnimals(prev => {
-          const updated = [...prev, ...results];
-          setTotalCount(updated.length);
-          return updated;
-        });
-      }
       setAnimals(results);
       setHasMore(results.length === PER_PAGE);
       setInitialLoaded(true);
@@ -110,10 +98,8 @@ export default function Wildlife() {
         }
       }
       setAnimals(results);
-      setAllAnimals(results);
       setCurrentPage(1);
       setHasMore(results.length === PER_PAGE);
-      setTotalCount(results.length);
     } catch (error) {
       console.error('Error searching wildlife:', error);
     } finally {
@@ -127,14 +113,9 @@ export default function Wildlife() {
     setShowSuggestions(false);
   };
 
-  // For browsing (no search), show accumulated results; for search, show current page results
-  const displayAnimals = searchQuery.trim() ? animals : allAnimals;
-  const totalPages = searchQuery.trim()
-    ? Math.ceil((hasMore ? (currentPage * PER_PAGE) : animals.length) / PER_PAGE)
-    : hasMore ? currentPage + 1 : currentPage;
-  const paginatedAnimals = searchQuery.trim()
-    ? animals.slice(0, PER_PAGE)
-    : displayAnimals.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+  // Only show current page of animals - no accumulation
+  const totalPages = Math.ceil((hasMore ? (currentPage * PER_PAGE) : animals.length) / PER_PAGE);
+  const paginatedAnimals = animals; // Already 10 per page from API
 
   const animalTypes = ['all', 'Mammalia', 'Aves', 'Reptilia', 'Amphibia'];
 
@@ -430,9 +411,9 @@ export default function Wildlife() {
                 totalPages={totalPages}
                 onPageChange={(page) => {
                   setCurrentPage(page);
-                  if (!searchQuery.trim() && page > allAnimals.length / PER_PAGE) {
-                    // Need to load more data
-                    loadAnimalsByType();
+                  // Load new page when page changes
+                  if (page !== currentPage) {
+                    setCurrentPage(page);
                   }
                 }}
                 itemsPerPage={PER_PAGE}
@@ -440,7 +421,7 @@ export default function Wildlife() {
                   ? (hasMore ? currentPage * PER_PAGE : animals.length)
                   : displayAnimals.length}
                 showingStart={(currentPage - 1) * PER_PAGE + 1}
-                showingEnd={Math.min(currentPage * PER_PAGE, displayAnimals.length)}
+                  showingEnd={Math.min(currentPage * PER_PAGE, animals.length)}
               />
             </>
           )}

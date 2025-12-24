@@ -7,7 +7,7 @@ import Loader from '../components/Loader';
 import { EmptyState } from '../components/ErrorState';
 import { fetchAnimalSounds, searchXenoCantoRecordings } from '../api/xenocanto';
 import { XenoCantoRecording } from '../types/animal';
-import { searchINatSpecies } from '../api/inaturalist';
+import { searchINatSpecies, INatTaxon } from '../api/inaturalist';
 import SoundPlayer from '../components/SoundPlayer';
 import { fetchWikipediaSummary } from '../api/wikipedia';
 import { getAutocompleteSuggestions } from '../utils/searchHelpers';
@@ -32,6 +32,14 @@ export default function Birds() {
   const [isBirdFavorite, setIsBirdFavorite] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   
+  // Bird cards view - 10 per page
+  const [birdCards, setBirdCards] = useState<INatTaxon[]>([]);
+  const [loadingBirdCards, setLoadingBirdCards] = useState(false);
+  const [birdCardsPage, setBirdCardsPage] = useState(1);
+  const [birdSoundCache, setBirdSoundCache] = useState<Record<string, XenoCantoRecording[]>>({});
+  const [playingSounds, setPlayingSounds] = useState<Record<string, HTMLAudioElement | null>>({});
+  const BIRDS_PER_PAGE = 10;
+  
   
   // Xeno-Canto search (Bird Sounds tab) - filters only, no bird name search
   const [xcSearchType, setXcSearchType] = useState('');
@@ -49,6 +57,7 @@ export default function Birds() {
   useEffect(() => {
     loadInitialData();
     requestLocation();
+    loadBirdCards();
     
     // Close suggestions when clicking outside
     function handleClickOutside(event: MouseEvent) {
@@ -60,6 +69,10 @@ export default function Birds() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    loadBirdCards();
+  }, [birdCardsPage]);
 
   // Update suggestions when query changes
   useEffect(() => {
@@ -107,6 +120,97 @@ export default function Birds() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadBirdCards = async () => {
+    setLoadingBirdCards(true);
+    try {
+      // Load birds from iNaturalist - only 10 per page
+      const results = await searchINatSpecies('aves', birdCardsPage, BIRDS_PER_PAGE);
+      setBirdCards(results);
+    } catch (error) {
+      console.error('Error loading bird cards:', error);
+      setBirdCards([]);
+    } finally {
+      setLoadingBirdCards(false);
+    }
+  };
+
+  const handlePlaySound = async (bird: INatTaxon) => {
+    const birdName = bird.preferred_common_name || bird.name;
+    const scientificName = bird.name;
+
+    // Stop any currently playing sounds
+    Object.values(playingSounds).forEach(audio => {
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    });
+    setPlayingSounds({});
+
+    // Check cache first
+    if (birdSoundCache[scientificName] && birdSoundCache[scientificName].length > 0) {
+      const cachedSounds = birdSoundCache[scientificName];
+      playFirstRecording(cachedSounds[0], birdName);
+      return;
+    }
+
+    // Fetch sounds from Xeno-Canto
+    try {
+      const sounds = await fetchAnimalSounds(scientificName, 1);
+      if (sounds && sounds.length > 0) {
+        setBirdSoundCache(prev => ({ ...prev, [scientificName]: sounds }));
+        playFirstRecording(sounds[0], birdName);
+      } else {
+        // Try common name as fallback
+        const fallbackSounds = await fetchAnimalSounds(birdName, 1);
+        if (fallbackSounds && fallbackSounds.length > 0) {
+          setBirdSoundCache(prev => ({ ...prev, [scientificName]: fallbackSounds }));
+          playFirstRecording(fallbackSounds[0], birdName);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching bird sounds:', error);
+    }
+  };
+
+  const playFirstRecording = (recording: XenoCantoRecording, birdName: string) => {
+    const soundUrl = recording.file.startsWith('//') 
+      ? `https:${recording.file}` 
+      : recording.file;
+    
+    const audio = new Audio(soundUrl);
+    audio.play().catch(err => {
+      console.error('Error playing audio:', err);
+    });
+
+    setPlayingSounds({ [birdName]: audio });
+
+    audio.addEventListener('ended', () => {
+      setPlayingSounds(prev => {
+        const updated = { ...prev };
+        delete updated[birdName];
+        return updated;
+      });
+    });
+  };
+
+  const handleStopSound = (birdName: string) => {
+    const audio = playingSounds[birdName];
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+      setPlayingSounds(prev => {
+        const updated = { ...prev };
+        delete updated[birdName];
+        return updated;
+      });
+    }
+  };
+
+  const isSoundPlaying = (birdName: string) => {
+    return !!playingSounds[birdName];
   };
 
   const loadNearbyBirds = async (lat: number, lng: number) => {
@@ -419,8 +523,8 @@ export default function Birds() {
                                   },
                                   images: selectedBird.default_photo ? [{
                                     urls: {
-                                      small: selectedBird.default_photo.medium_url || selectedBird.default_photo.large_url || '',
-                                      regular: selectedBird.default_photo.large_url || selectedBird.default_photo.medium_url || ''
+                                      small: selectedBird.default_photo.medium_url || '',
+                                      regular: selectedBird.default_photo.medium_url || ''
                                     }
                                   }] : []
                                 };
@@ -532,11 +636,164 @@ export default function Birds() {
                     </p>
                   </div>
                 ) : (
-                  <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-gray-600 dark:text-gray-400 text-lg">
-                      Search for birds by name to see their photos and information.
-                    </p>
-                  </div>
+                  <>
+                    {/* Bird Cards Grid - 10 per page */}
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                          Explore Birds
+                        </h3>
+                      </div>
+
+                      {loadingBirdCards ? (
+                        <div className="flex justify-center py-12">
+                          <Loader />
+                        </div>
+                      ) : birdCards.length > 0 ? (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {birdCards.map((bird) => {
+                              const birdName = bird.preferred_common_name || bird.name;
+                              const imageUrl = bird.default_photo?.medium_url;
+                              const isPlaying = isSoundPlaying(birdName);
+                              
+                              return (
+                                <div
+                                  key={bird.id || bird.name}
+                                  className="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:scale-105"
+                                >
+                                  {/* Bird Image */}
+                                  <div className="relative h-48 bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 overflow-hidden flex items-center justify-center">
+                                    {imageUrl ? (
+                                      <img
+                                        src={imageUrl}
+                                        alt={birdName}
+                                        className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                          const parent = e.currentTarget.parentElement;
+                                          if (parent) {
+                                            parent.innerHTML = `<div class="w-full h-full flex items-center justify-center text-6xl">🐦</div>`;
+                                          }
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-6xl">
+                                        🐦
+                                      </div>
+                                    )}
+                                    {/* Favorite Button */}
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const favoriteAnimal = {
+                                          id: bird.id?.toString() || birdName,
+                                          name: birdName,
+                                          taxonomy: {
+                                            scientific_name: bird.name || ''
+                                          },
+                                          images: bird.default_photo ? [{
+                                            urls: {
+                                              small: bird.default_photo.medium_url || '',
+                                              regular: bird.default_photo.medium_url || ''
+                                            }
+                                          }] : []
+                                        };
+                                        
+                                        if (isFavorite(birdName)) {
+                                          removeFromFavorites(birdName);
+                                        } else {
+                                          addToFavorites(favoriteAnimal as any);
+                                        }
+                                      }}
+                                      className="absolute top-2 right-2 p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-lg z-10"
+                                      title={isFavorite(birdName) ? 'Remove from favorites' : 'Add to favorites'}
+                                    >
+                                      {isFavorite(birdName) ? (
+                                        <svg className="w-5 h-5 text-yellow-500 fill-current" viewBox="0 0 20 20">
+                                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                        </svg>
+                                      ) : (
+                                        <svg className="w-5 h-5 text-gray-400 hover:text-yellow-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                        </svg>
+                                      )}
+                                    </button>
+                                  </div>
+
+                                  {/* Bird Info */}
+                                  <div className="p-4">
+                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1 truncate">
+                                      {birdName}
+                                    </h4>
+                                    {bird.name && bird.name !== birdName && (
+                                      <p className="text-sm italic text-gray-600 dark:text-gray-400 mb-3 truncate">
+                                        {bird.name}
+                                      </p>
+                                    )}
+                                    
+                                    {/* Play Sound Button */}
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (isPlaying) {
+                                          handleStopSound(birdName);
+                                        } else {
+                                          handlePlaySound(bird);
+                                        }
+                                      }}
+                                      className="w-full mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                      {isPlaying ? (
+                                        <>
+                                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                                          </svg>
+                                          Stop Sound
+                                        </>
+                                      ) : (
+                                        <>
+                                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z" />
+                                          </svg>
+                                          Play Sound
+                                        </>
+                                      )}
+                                    </button>
+
+                                    {/* View Details Link */}
+                                    <Link
+                                      to={`/animal/${encodeURIComponent(birdName)}`}
+                                      className="block w-full mt-2 text-center px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors"
+                                    >
+                                      View Details →
+                                    </Link>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Pagination */}
+                          <div className="flex justify-center mt-6">
+                            <Pagination
+                              currentPage={birdCardsPage}
+                              totalPages={10}
+                              onPageChange={setBirdCardsPage}
+                              itemsPerPage={BIRDS_PER_PAGE}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <EmptyState
+                          title="No birds found"
+                          message="Try refreshing the page or check your connection"
+                        />
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             )}
