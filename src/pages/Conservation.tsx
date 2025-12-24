@@ -79,18 +79,6 @@ export default function Conservation() {
                 }
               }
 
-              // Create a minimal enriched animal object for conservation display
-              // Use enrichAnimal for full details, but for conservation page we only need basic info
-              const enrichedAnimal: Partial<EnrichedAnimal> = {
-                id: (animal as any).id || animal.name,
-                name: animal.name,
-                taxonomy: animal.taxonomy,
-                images: (animal as any).images || [],
-                conservationStatus: conservationStatus || undefined,
-                locations: animal.locations,
-                characteristics: animal.characteristics,
-              };
-
               // Filter by selected status
               if (selectedStatus === 'all' || 
                   (conservationStatus && conservationStatus.category === selectedStatus)) {
