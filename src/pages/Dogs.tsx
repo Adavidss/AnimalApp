@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllDogBreeds, DogBreed } from '../api/theDogApi';
+import { getAllDogBreeds, getDogImagesByBreed, DogBreed } from '../api/theDogApi';
 import { getCategoryTheme } from '../utils/categories';
 import Loader from '../components/Loader';
 import { EmptyState } from '../components/ErrorState';
@@ -10,6 +10,7 @@ import Pagination from '../components/Pagination';
 export default function Dogs() {
   const [breeds, setBreeds] = useState<DogBreed[]>([]);
   const [filteredBreeds, setFilteredBreeds] = useState<DogBreed[]>([]);
+  const [breedImages, setBreedImages] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
@@ -33,6 +34,29 @@ export default function Dogs() {
       if (data && data.length > 0) {
         setBreeds(data);
         setFilteredBreeds(data);
+        
+        // Load images for breeds that don't have them
+        const images: Record<string, string> = {};
+        const imagePromises = data.slice(0, 30).map(async (breed) => {
+          // If breed already has an image, use it
+          if (breed.image?.url) {
+            images[breed.id.toString()] = breed.image.url;
+            return;
+          }
+          
+          // Otherwise, fetch images for this breed
+          try {
+            const breedImages = await getDogImagesByBreed(breed.id, 1);
+            if (breedImages.length > 0 && breedImages[0].url) {
+              images[breed.id.toString()] = breedImages[0].url;
+            }
+          } catch (error) {
+            console.debug(`Error loading image for ${breed.name}:`, error);
+          }
+        });
+
+        await Promise.allSettled(imagePromises);
+        setBreedImages(images);
       } else {
         console.warn('No dog breeds returned from API. This might be due to missing API key or API issues.');
         setBreeds([]);
@@ -209,14 +233,19 @@ export default function Dogs() {
                   >
                     {/* Image */}
                     <div className="relative h-64 bg-gray-200 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
-                      {breed.image?.url ? (
+                      {(breed.image?.url || breedImages[breed.id.toString()]) ? (
                         <img
-                          src={breed.image.url}
+                          src={breed.image?.url || breedImages[breed.id.toString()]}
                           alt={breed.name}
-                          className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
                           onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center text-6xl">🐕</div>';
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const fallback = document.createElement('div');
+                            fallback.className = 'w-full h-full flex items-center justify-center text-6xl';
+                            fallback.textContent = '🐕';
+                            target.parentElement?.appendChild(fallback);
                           }}
                         />
                       ) : (
