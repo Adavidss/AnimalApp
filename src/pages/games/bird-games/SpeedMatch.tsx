@@ -25,7 +25,6 @@ export default function SpeedMatch() {
   const [timeLeft, setTimeLeft] = useState(30);
   const [gameOver, setGameOver] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [currentBird, setCurrentBird] = useState<Bird | null>(null);
 
   const loadGame = useCallback(async () => {
     setLoading(true);
