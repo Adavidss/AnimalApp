@@ -119,8 +119,15 @@ export default function SizeChallenge() {
         // Medium differences
         return ANIMAL_SIZES;
       case 'hard':
-        // Similar sizes - hardest to compare
-        return ANIMAL_SIZES;
+        // Similar sizes - hardest to compare (filter to animals with similar sizes)
+        return ANIMAL_SIZES.filter(a => {
+          // Include animals that might be similar in at least one dimension
+          const similarWeight = ANIMAL_SIZES.some(other => 
+            other.name !== a.name && 
+            Math.max(a.weight, other.weight) / Math.min(a.weight, other.weight) < 2
+          );
+          return similarWeight;
+        });
     }
   }, []);
 
@@ -135,16 +142,37 @@ export default function SizeChallenge() {
       let animal1 = shuffled[0];
       let animal2 = shuffled[1];
 
-      // For hard mode, select similar-sized animals
+      // For hard mode, select similar-sized animals (much harder)
       if (diff === 'hard') {
         for (let j = 0; j < shuffled.length - 1; j++) {
-          const ratio = Math.max(shuffled[j].weight, shuffled[j + 1].weight) /
-                       Math.min(shuffled[j].weight, shuffled[j + 1].weight);
-          if (ratio < 3 && ratio > 1.2) { // Similar but not identical
-            animal1 = shuffled[j];
-            animal2 = shuffled[j + 1];
-            break;
+          for (let k = j + 1; k < shuffled.length; k++) {
+            const ratio = Math.max(shuffled[j].weight, shuffled[k].weight) /
+                         Math.min(shuffled[j].weight, shuffled[k].weight);
+            // Much stricter - only 1.1 to 1.8x difference (very similar)
+            if (ratio < 1.8 && ratio > 1.1) {
+              animal1 = shuffled[j];
+              animal2 = shuffled[k];
+              break;
+            }
           }
+          if (animal1 && animal2) break;
+        }
+      }
+      
+      // For medium mode, make it moderately challenging
+      if (diff === 'medium') {
+        for (let j = 0; j < shuffled.length - 1; j++) {
+          for (let k = j + 1; k < shuffled.length; k++) {
+            const ratio = Math.max(shuffled[j].weight, shuffled[k].weight) /
+                         Math.min(shuffled[j].weight, shuffled[k].weight);
+            // Moderate difficulty - 2 to 4x difference
+            if (ratio < 4 && ratio > 2) {
+              animal1 = shuffled[j];
+              animal2 = shuffled[k];
+              break;
+            }
+          }
+          if (animal1 && animal2) break;
         }
       }
 
@@ -173,15 +201,27 @@ export default function SizeChallenge() {
     try {
       const gameRounds = generateRounds(difficulty);
 
-      // Fetch images for all animals
+      // Fetch images for all animals with better error handling
       for (const round of gameRounds) {
         try {
-          const images1 = await fetchUnsplashImages(round.animal1.name, 1);
-          const images2 = await fetchUnsplashImages(round.animal2.name, 1);
-          round.animal1.image = images1[0]?.urls?.small;
-          round.animal2.image = images2[0]?.urls?.small;
+          // Fetch images with timeout and fallback
+          const [images1Result, images2Result] = await Promise.allSettled([
+            fetchUnsplashImages(round.animal1.name, 1),
+            fetchUnsplashImages(round.animal2.name, 1)
+          ]);
+          
+          if (images1Result.status === 'fulfilled' && images1Result.value[0]) {
+            round.animal1.image = images1Result.value[0]?.urls?.small || 
+                                  images1Result.value[0]?.urls?.thumb || '';
+          }
+          
+          if (images2Result.status === 'fulfilled' && images2Result.value[0]) {
+            round.animal2.image = images2Result.value[0]?.urls?.small || 
+                                  images2Result.value[0]?.urls?.thumb || '';
+          }
         } catch (error) {
           console.error('Failed to fetch images:', error);
+          // Keep going even if images fail - game can still work
         }
       }
 
@@ -550,12 +590,20 @@ export default function SizeChallenge() {
               onClick={() => handleAnswer(1)}
               className="p-6 bg-white dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 border-2 border-gray-200 dark:border-gray-600 hover:border-purple-500 rounded-xl transition-all"
             >
-              {round.animal1.image && (
+              {round.animal1.image ? (
                 <img
                   src={round.animal1.image}
                   alt={round.animal1.name}
-                  className="w-full h-48 object-cover rounded-lg mb-4"
+                  className="w-full h-48 object-contain rounded-lg mb-4 bg-gray-100 dark:bg-gray-700"
+                  onError={(e) => {
+                    // Hide image if it fails to load
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
                 />
+              ) : (
+                <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-lg mb-4 flex items-center justify-center">
+                  <span className="text-gray-400 dark:text-gray-500">No image</span>
+                </div>
               )}
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {round.animal1.name}
@@ -566,12 +614,20 @@ export default function SizeChallenge() {
               onClick={() => handleAnswer(2)}
               className="p-6 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-500 rounded-xl transition-all"
             >
-              {round.animal2.image && (
+              {round.animal2.image ? (
                 <img
                   src={round.animal2.image}
                   alt={round.animal2.name}
-                  className="w-full h-48 object-cover rounded-lg mb-4"
+                  className="w-full h-48 object-contain rounded-lg mb-4 bg-gray-100 dark:bg-gray-700"
+                  onError={(e) => {
+                    // Hide image if it fails to load
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
                 />
+              ) : (
+                <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-lg mb-4 flex items-center justify-center">
+                  <span className="text-gray-400 dark:text-gray-500">No image</span>
+                </div>
               )}
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {round.animal2.name}

@@ -202,6 +202,7 @@ export default function MemoryMatch() {
 
   const getGridClass = () => {
     const gridSize = getGridSize(difficulty);
+    // Make square grid - use same number of rows and cols
     return `grid-cols-${gridSize.cols} gap-3 md:gap-4`;
   };
 

@@ -27,6 +27,7 @@ export default function BirdSoundMatch() {
     setLoading(true);
     setSelected(null);
     setCorrect(null);
+    setSoundUrl('');
     try {
       // Get birds from iNaturalist
       const birds = await searchINatSpecies('bird');
@@ -34,35 +35,51 @@ export default function BirdSoundMatch() {
         return;
       }
 
-      // Find a bird with sound
+      // Find a bird with sound - try up to 5 birds (like Bird-App)
       let correctBird: Bird | null = null;
       let soundFound = false;
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 5;
 
       while (!soundFound && attempts < maxAttempts) {
         const randomBird = birds[Math.floor(Math.random() * birds.length)];
-        const sounds = await fetchAnimalSounds(
-          randomBird.preferred_common_name || randomBird.name || '',
-          1
-        );
+        // Use scientific name for better Xeno-Canto results (like Bird-App)
+        const scientificName = randomBird.name; // This is the scientific name from iNaturalist
         
-        if (sounds && sounds.length > 0 && sounds[0].file) {
-          correctBird = {
-            id: String(randomBird.id || Math.random()),
-            name: randomBird.preferred_common_name || randomBird.name || 'Unknown Bird',
-            preferred_common_name: randomBird.preferred_common_name || randomBird.name,
-            sciName: randomBird.name,
-            default_photo: randomBird.default_photo,
-          };
-          setSoundUrl(sounds[0].file);
-          soundFound = true;
+        try {
+          const sounds = await fetchAnimalSounds(scientificName, 1);
+          
+          if (sounds && sounds.length > 0 && sounds[0].file) {
+            // Normalize sound URL (handle // prefix like Bird-App does)
+            let soundFileUrl = sounds[0].file;
+            if (soundFileUrl.startsWith('//')) {
+              soundFileUrl = `https:${soundFileUrl}`;
+            } else if (!soundFileUrl.startsWith('http')) {
+              // If it's just a path, construct full URL from recording ID
+              if (sounds[0].id) {
+                soundFileUrl = `https://xeno-canto.org/${sounds[0].id}/download`;
+              }
+            }
+            
+            correctBird = {
+              id: String(randomBird.id || Math.random()),
+              name: randomBird.preferred_common_name || randomBird.name || 'Unknown Bird',
+              preferred_common_name: randomBird.preferred_common_name || randomBird.name,
+              sciName: scientificName,
+              default_photo: randomBird.default_photo,
+            };
+            setSoundUrl(soundFileUrl);
+            soundFound = true;
+          }
+        } catch (error) {
+          // Continue to next attempt
+          console.debug('Error fetching sound for bird:', error);
         }
         attempts++;
       }
 
-      if (!correctBird) {
-        // Fallback: show error message
+      if (!correctBird || !soundUrl) {
+        // No sound found after multiple attempts
         return;
       }
 
@@ -130,7 +147,10 @@ export default function BirdSoundMatch() {
               </p>
               <div className="flex gap-4 justify-center">
                 <button
-                  onClick={loadQuiz}
+                  onClick={() => {
+                    setLoading(true);
+                    loadQuiz();
+                  }}
                   className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
                 >
                   🔄 Try Again

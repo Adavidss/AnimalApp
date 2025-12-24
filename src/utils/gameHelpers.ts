@@ -196,11 +196,11 @@ export function arraysEqual<T>(arr1: T[], arr2: T[]): boolean {
 export function getGridSize(difficulty: 'easy' | 'medium' | 'hard'): { rows: number; cols: number; pairs: number } {
   switch (difficulty) {
     case 'easy':
-      return { rows: 3, cols: 4, pairs: 6 };  // 12 cards (6 pairs)
+      return { rows: 2, cols: 2, pairs: 2 };  // 4 cards (2 pairs) - square 2x2
     case 'medium':
-      return { rows: 4, cols: 4, pairs: 8 };  // 16 cards (8 pairs)
+      return { rows: 4, cols: 4, pairs: 8 };  // 16 cards (8 pairs) - square 4x4
     case 'hard':
-      return { rows: 4, cols: 6, pairs: 12 }; // 24 cards (12 pairs)
+      return { rows: 6, cols: 6, pairs: 18 }; // 36 cards (18 pairs) - square 6x6
     default:
       return { rows: 4, cols: 4, pairs: 8 };
   }
