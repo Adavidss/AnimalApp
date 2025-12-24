@@ -136,44 +136,80 @@ export default function SizeChallenge() {
     const animals = getAnimalsByDifficulty(diff);
     const rounds: GameRound[] = [];
     const comparisonTypes: ComparisonType[] = ['weight', 'height', 'length'];
+    const usedPairs = new Set<string>(); // Track used animal pairs for variety
 
     for (let i = 0; i < ROUNDS_PER_GAME; i++) {
-      // Select two random animals
+      // Select two random animals with variety
       const shuffled = [...animals].sort(() => Math.random() - 0.5);
       let animal1 = shuffled[0];
       let animal2 = shuffled[1];
+      let attempts = 0;
+      const maxAttempts = 50;
 
       // For hard mode, select similar-sized animals (much harder)
       if (diff === 'hard') {
+        // Try to find pairs with very similar sizes (1.1 to 1.5x difference)
+        const similarPairs: Array<{a1: AnimalSize, a2: AnimalSize, ratio: number}> = [];
         for (let j = 0; j < shuffled.length - 1; j++) {
           for (let k = j + 1; k < shuffled.length; k++) {
             const ratio = Math.max(shuffled[j].weight, shuffled[k].weight) /
                          Math.min(shuffled[j].weight, shuffled[k].weight);
-            // Much stricter - only 1.1 to 1.8x difference (very similar)
-            if (ratio < 1.8 && ratio > 1.1) {
-              animal1 = shuffled[j];
-              animal2 = shuffled[k];
-              break;
+            if (ratio < 1.5 && ratio > 1.1) {
+              const pairKey = [shuffled[j].name, shuffled[k].name].sort().join('|');
+              if (!usedPairs.has(pairKey)) {
+                similarPairs.push({a1: shuffled[j], a2: shuffled[k], ratio});
+              }
             }
           }
-          if (animal1 && animal2) break;
+        }
+        // Sort by ratio (closer = harder) and pick from top candidates
+        if (similarPairs.length > 0) {
+          similarPairs.sort((a, b) => a.ratio - b.ratio);
+          const selected = similarPairs[Math.floor(Math.random() * Math.min(5, similarPairs.length))];
+          animal1 = selected.a1;
+          animal2 = selected.a2;
+          usedPairs.add([animal1.name, animal2.name].sort().join('|'));
         }
       }
       
-      // For medium mode, make it moderately challenging
+      // For medium mode, make it moderately challenging with variety
       if (diff === 'medium') {
+        // Try to find pairs with moderate differences (1.5 to 3x difference) - closer than before
+        const moderatePairs: Array<{a1: AnimalSize, a2: AnimalSize, ratio: number}> = [];
         for (let j = 0; j < shuffled.length - 1; j++) {
           for (let k = j + 1; k < shuffled.length; k++) {
             const ratio = Math.max(shuffled[j].weight, shuffled[k].weight) /
                          Math.min(shuffled[j].weight, shuffled[k].weight);
-            // Moderate difficulty - 2 to 4x difference
-            if (ratio < 4 && ratio > 2) {
-              animal1 = shuffled[j];
-              animal2 = shuffled[k];
-              break;
+            if (ratio < 3 && ratio > 1.5) {
+              const pairKey = [shuffled[j].name, shuffled[k].name].sort().join('|');
+              if (!usedPairs.has(pairKey)) {
+                moderatePairs.push({a1: shuffled[j], a2: shuffled[k], ratio});
+              }
             }
           }
-          if (animal1 && animal2) break;
+        }
+        if (moderatePairs.length > 0) {
+          moderatePairs.sort((a, b) => a.ratio - b.ratio);
+          const selected = moderatePairs[Math.floor(Math.random() * Math.min(8, moderatePairs.length))];
+          animal1 = selected.a1;
+          animal2 = selected.a2;
+          usedPairs.add([animal1.name, animal2.name].sort().join('|'));
+        }
+      }
+
+      // For easy mode, still avoid using the same pairs repeatedly
+      if (diff === 'easy') {
+        while (attempts < maxAttempts) {
+          const pairKey = [animal1.name, animal2.name].sort().join('|');
+          if (!usedPairs.has(pairKey)) {
+            usedPairs.add(pairKey);
+            break;
+          }
+          // Try different random pair
+          const newShuffled = [...animals].sort(() => Math.random() - 0.5);
+          animal1 = newShuffled[0];
+          animal2 = newShuffled[1];
+          attempts++;
         }
       }
 
