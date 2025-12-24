@@ -42,7 +42,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <header className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Navigation with Logo */}
@@ -164,12 +164,12 @@ function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Mobile Navigation */}
-          <div className="md:hidden pb-4">
-            <nav className="flex gap-3 overflow-x-auto overflow-y-visible">
+          <div className="md:hidden pb-4 relative">
+            <nav className="flex gap-3 overflow-x-auto">
               <Link to="/" className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                 Home
               </Link>
-              <div className="relative z-50">
+              <div className="relative">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -186,17 +186,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                {showAnimalsDropdown && (
-                  <>
-                    {/* Backdrop to close dropdown on click outside */}
-                    <div 
-                      className="fixed inset-0 z-[45] bg-black/20"
-                      onClick={() => setShowAnimalsDropdown(false)}
-                    />
-                    <div 
-                      className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[50]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+              </div>
                       <Link to="/explorer" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors rounded-t-lg touch-manipulation">
                         <span className="text-xl">🔍</span>
                         <span className="font-medium text-gray-700 dark:text-gray-300">All Animals</span>
@@ -229,7 +219,6 @@ function Layout({ children }: { children: React.ReactNode }) {
                     </div>
                   </>
                 )}
-              </div>
               <Link to="/favorites" className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                 ⭐ Favorites
               </Link>
