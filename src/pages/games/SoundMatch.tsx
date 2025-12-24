@@ -581,7 +581,7 @@ export default function SoundMatch() {
             <div className="text-center">
               <p className="text-gray-600 dark:text-gray-400">
                 {!round.soundUrl || audioError
-                  ? 'Sound not available - use the hints!'
+                  ? 'Sound not available'
                   : audioPlaying
                   ? 'Playing sound...'
                   : 'Click to play sound'}
@@ -603,23 +603,6 @@ export default function SoundMatch() {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Hints */}
-          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              💡 Hints:
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {round.correctAnimal.hints?.map((hint, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm"
-                >
-                  {hint}
-                </span>
-              ))}
-            </div>
           </div>
         </div>
 
