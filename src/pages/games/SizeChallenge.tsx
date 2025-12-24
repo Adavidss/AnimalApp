@@ -268,7 +268,10 @@ export default function SizeChallenge() {
           console.error('Failed to fetch images:', error);
           // Keep going even if images fail - game can still work
         }
-      }
+      });
+
+      // Wait for all images to load in parallel
+      await Promise.all(imagePromises);
 
       setRounds(gameRounds);
       setGameStarted(true);
