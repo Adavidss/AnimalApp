@@ -419,7 +419,7 @@ export default function Wildlife() {
                 itemsPerPage={PER_PAGE}
                 totalItems={searchQuery.trim()
                   ? (hasMore ? currentPage * PER_PAGE : animals.length)
-                  : displayAnimals.length}
+                  : animals.length}
                 showingStart={(currentPage - 1) * PER_PAGE + 1}
                   showingEnd={Math.min(currentPage * PER_PAGE, animals.length)}
               />
