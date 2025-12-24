@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { fetchXenoCanto } from '../../api/sounds';
+import { fetchAnimalSounds } from '../../api/xenocanto';
 import { fetchUnsplashImages } from '../../api/images';
 import {
   getRandomAnimals,
@@ -55,6 +55,7 @@ export default function SoundMatch() {
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [audioError, setAudioError] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   // Load high score
   useEffect(() => {
@@ -67,6 +68,7 @@ export default function SoundMatch() {
     setGameStarted(false);
     setGameWon(false);
     setCurrentRound(0);
+    setImageErrors(new Set()); // Reset image errors
     setStats({
       correct: 0,
       incorrect: 0,
@@ -83,43 +85,76 @@ export default function SoundMatch() {
       // Prepare rounds
       const preparedRounds: GameRound[] = [];
 
-      for (const animal of gameAnimals) {
+      // Fetch all images and sounds in parallel for faster loading
+      const roundsPromises = gameAnimals.map(async (animal) => {
         // Get 3 wrong answers
         const wrongAnswers = getWrongAnswers(animal, 3);
         const allOptions = [animal, ...wrongAnswers].sort(() => Math.random() - 0.5);
 
-        // Fetch images for all options
-        const images: { [key: string]: string } = {};
-        for (const option of allOptions) {
+        // Fetch images for all options in parallel
+        const imagePromises = allOptions.map(async (option) => {
           try {
-            const imageResults = await fetchUnsplashImages(option.name, 1);
-            images[option.name] = imageResults[0]?.urls?.small || '';
+            // Add timeout to prevent hanging
+            const imagePromise = fetchUnsplashImages(option.name, 1);
+            const timeoutPromise = new Promise<typeof fetchUnsplashImages extends (...args: any[]) => Promise<infer T> ? T : never>((_, reject) => 
+              setTimeout(() => reject(new Error('timeout')), 3000)
+            );
+            
+            const imageResults = await Promise.race([imagePromise, timeoutPromise]);
+            return {
+              name: option.name,
+              url: imageResults[0]?.urls?.small || imageResults[0]?.urls?.thumb || imageResults[0]?.urls?.regular || ''
+            };
           } catch (error) {
-            console.error(`Failed to fetch image for ${option.name}:`, error);
-            images[option.name] = '';
+            return { name: option.name, url: '' };
           }
-        }
+        });
 
-        // Fetch sound for correct animal
+        const imageResults = await Promise.all(imagePromises);
+        const images: { [key: string]: string } = {};
+        imageResults.forEach(result => {
+          images[result.name] = result.url;
+        });
+
+        // Fetch sound for correct animal (with timeout)
         let soundUrl = '';
         try {
-          const sounds = await fetchXenoCanto(animal.scientificName);
-          if (sounds && sounds.length > 0) {
-            // Prefer higher quality recordings
-            const bestSound = sounds.find((s: any) => s.q === 'A') || sounds[0];
-            soundUrl = bestSound.file;
+          const soundPromise = fetchAnimalSounds(animal.scientificName, 5);
+          const timeoutPromise = new Promise<typeof fetchAnimalSounds extends (...args: any[]) => Promise<infer T> ? T : never>((_, reject) => 
+            setTimeout(() => reject(new Error('timeout')), 4000)
+          );
+          
+          const sounds = await Promise.race([soundPromise, timeoutPromise]);
+          if (sounds && Array.isArray(sounds) && sounds.length > 0) {
+            // Filter for quality and normalize URL
+            const goodRecordings = sounds.filter((s: any) => s && s.q && ['A', 'B', 'C'].includes(s.q));
+            const recordingsToUse = goodRecordings.length > 0 ? goodRecordings : sounds;
+            const bestSound = recordingsToUse[0];
+            
+            if (bestSound && bestSound.file) {
+              // Normalize sound URL
+              let normalizedUrl = bestSound.file;
+              if (normalizedUrl.startsWith('//')) {
+                normalizedUrl = `https:${normalizedUrl}`;
+              } else if (!normalizedUrl.startsWith('http') && bestSound.id) {
+                normalizedUrl = `https://xeno-canto.org/${bestSound.id}/download`;
+              }
+              soundUrl = normalizedUrl;
+            }
           }
         } catch (error) {
-          console.error(`Failed to fetch sound for ${animal.name}:`, error);
+          // Continue without sound
         }
 
-        preparedRounds.push({
+        return {
           correctAnimal: animal,
           options: allOptions,
           soundUrl,
           images
-        });
-      }
+        };
+      });
+
+      const preparedRounds = await Promise.all(roundsPromises);
 
       setRounds(preparedRounds);
       setGameStarted(true);
@@ -617,12 +652,21 @@ export default function SoundMatch() {
                   answered ? 'cursor-default' : 'cursor-pointer'
                 }`}
               >
-                {round.images[animal.name] && (
+                {round.images[animal.name] && !imageErrors.has(animal.name) ? (
                   <img
                     src={round.images[animal.name]}
                     alt={animal.name}
                     className="w-full h-40 object-cover rounded-lg mb-3"
+                    onError={() => {
+                      setImageErrors(prev => new Set(prev).add(animal.name));
+                    }}
                   />
+                ) : (
+                  <div className="w-full h-40 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg mb-3 flex items-center justify-center">
+                    <span className="text-white text-xl font-bold text-center px-2">
+                      {animal.name}
+                    </span>
+                  </div>
                 )}
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">
                   {animal.name}

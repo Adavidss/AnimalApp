@@ -141,70 +141,75 @@ export default function MemoryMatch() {
       const gridSize = getGridSize(difficulty);
       const animalCount = gridSize.pairs;
 
-      // Fetch animal images with better fallback logic
+      // Fetch animal images with better fallback logic - fetch in parallel for speed
       const selectedAnimals = ANIMALS_FOR_GAME.slice(0, animalCount);
       const animalCards: Array<{ animalName: string; imageUrl: string }> = [];
 
-      // Use enrichAnimal for better image loading with multiple sources
-      for (const animalName of selectedAnimals) {
+      // Fetch all images in parallel for faster loading
+      const imagePromises = selectedAnimals.map(async (animalName) => {
         try {
-          // First try to get random animal data (includes scientific name)
-          const animal = await getRandomAnimal();
-          if (!animal) {
-            // Fallback to using animal name directly
-            const images = await fetchUnsplashImages(animalName, 1);
-            const imageUrl = images[0]?.urls?.small || images[0]?.urls?.thumb || images[0]?.urls?.regular || '';
-            if (imageUrl) {
-              animalCards.push({ animalName, imageUrl });
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise<null>((_, reject) => 
+            setTimeout(() => reject(new Error('timeout')), 5000)
+          );
+
+          // Try direct Unsplash fetch first (fastest)
+          const fetchPromise = (async () => {
+            try {
+              const images = await fetchUnsplashImages(animalName, 1);
+              const imageUrl = images[0]?.urls?.small || images[0]?.urls?.thumb || images[0]?.urls?.regular || '';
+              if (imageUrl) {
+                return { animalName, imageUrl };
+              }
+            } catch (e) {
+              // Continue to fallback
             }
-          } else {
-            // Use enrichAnimal which tries multiple sources (iNaturalist, Unsplash, etc.)
-            const enriched = await enrichAnimal(animalName, animal.taxonomy?.scientific_name || animalName);
-            if (enriched) {
-              // Try multiple image sources
-              let imageUrl = '';
-              
-              // Priority 1: enriched images (from iNaturalist/Unsplash)
-              if (enriched.images && enriched.images.length > 0) {
-                imageUrl = enriched.images[0]?.urls?.small || 
-                          enriched.images[0]?.urls?.thumb || 
-                          enriched.images[0]?.urls?.regular || '';
-              }
-              
-              // Priority 2: Wikipedia thumbnail
-              if (!imageUrl && enriched.wikipedia?.thumbnail?.source) {
-                imageUrl = enriched.wikipedia.thumbnail.source;
-              }
-              
-              // Priority 3: Fallback to fetchUnsplashImages directly
-              if (!imageUrl) {
-                try {
-                  const images = await fetchUnsplashImages(animalName, 1, animal.taxonomy?.scientific_name);
-                  imageUrl = images[0]?.urls?.small || images[0]?.urls?.thumb || images[0]?.urls?.regular || '';
-                } catch (e) {
-                  console.debug(`Failed to fetch image for ${animalName}:`, e);
+
+            // Fallback: try enrichAnimal for better images
+            try {
+              const animal = await getRandomAnimal();
+              if (animal) {
+                const enriched = await enrichAnimal(animalName, animal.taxonomy?.scientific_name || animalName);
+                if (enriched) {
+                  let imageUrl = '';
+                  
+                  // Priority 1: enriched images
+                  if (enriched.images && enriched.images.length > 0) {
+                    imageUrl = enriched.images[0]?.urls?.small || 
+                              enriched.images[0]?.urls?.thumb || 
+                              enriched.images[0]?.urls?.regular || '';
+                  }
+                  
+                  // Priority 2: Wikipedia thumbnail
+                  if (!imageUrl && enriched.wikipedia?.thumbnail?.source) {
+                    imageUrl = enriched.wikipedia.thumbnail.source;
+                  }
+                  
+                  if (imageUrl) {
+                    return { animalName, imageUrl };
+                  }
                 }
               }
-              
-              if (imageUrl) {
-                animalCards.push({ animalName, imageUrl });
-              }
+            } catch (e) {
+              // Continue
             }
-          }
+
+            return null;
+          })();
+
+          const result = await Promise.race([fetchPromise, timeoutPromise]);
+          return result;
         } catch (error) {
-          console.error(`Failed to load image for ${animalName}:`, error);
-          // Try direct Unsplash fetch as last resort
-          try {
-            const images = await fetchUnsplashImages(animalName, 1);
-            const imageUrl = images[0]?.urls?.small || images[0]?.urls?.thumb || images[0]?.urls?.regular || '';
-            if (imageUrl) {
-              animalCards.push({ animalName, imageUrl });
-            }
-          } catch (e) {
-            console.debug(`All image sources failed for ${animalName}`);
-          }
+          return null;
         }
-      }
+      });
+
+      const results = await Promise.all(imagePromises);
+      results.forEach(result => {
+        if (result) {
+          animalCards.push(result);
+        }
+      });
 
       // Ensure we have enough cards (retry if needed)
       if (animalCards.length < animalCount) {

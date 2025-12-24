@@ -201,13 +201,18 @@ export default function SizeChallenge() {
     try {
       const gameRounds = generateRounds(difficulty);
 
-      // Fetch images for all animals with better error handling
-      for (const round of gameRounds) {
+      // Fetch images for all animals in parallel for faster loading
+      const imagePromises = gameRounds.map(async (round) => {
         try {
-          // Fetch images with timeout and fallback
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('timeout')), 3000)
+          );
+
+          // Fetch images for both animals in parallel
           const [images1Result, images2Result] = await Promise.allSettled([
-            fetchUnsplashImages(round.animal1.name, 1),
-            fetchUnsplashImages(round.animal2.name, 1)
+            Promise.race([fetchUnsplashImages(round.animal1.name, 1), timeoutPromise]),
+            Promise.race([fetchUnsplashImages(round.animal2.name, 1), timeoutPromise])
           ]);
           
           // Try multiple image URL sizes with better fallbacks
