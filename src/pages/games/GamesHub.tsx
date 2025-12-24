@@ -82,6 +82,86 @@ const GAMES: GameCardProps[] = [
       'Multiple animals',
       'Detailed analysis'
     ]
+  },
+  {
+    id: 'animal_trivia',
+    title: 'Animal Trivia',
+    description: 'Test your knowledge with fun animal trivia questions!',
+    icon: '🧠',
+    difficulty: 'medium',
+    estimatedTime: '5-10 min',
+    path: '/games/animal-trivia',
+    gradient: 'from-yellow-500 to-orange-500',
+    features: [
+      'Multiple choice questions',
+      'Various topics',
+      'Score tracking',
+      'Educational facts'
+    ]
+  },
+  {
+    id: 'name_that_animal',
+    title: 'Name That Animal',
+    description: 'Identify animals from their images with hints!',
+    icon: '🖼️',
+    difficulty: 'easy',
+    estimatedTime: '5-8 min',
+    path: '/games/name-that-animal',
+    gradient: 'from-pink-500 to-rose-500',
+    features: [
+      'Image identification',
+      'Helpful hints',
+      'Score system',
+      'Multiple rounds'
+    ]
+  },
+  {
+    id: 'hangman',
+    title: 'Animal Hangman',
+    description: 'Classic hangman game with animal names!',
+    icon: '🎯',
+    difficulty: 'medium',
+    estimatedTime: '5-10 min',
+    path: '/games/animal-hangman',
+    gradient: 'from-green-500 to-emerald-500',
+    features: [
+      'Classic gameplay',
+      'Animal names',
+      'Visual feedback',
+      'Score tracking'
+    ]
+  },
+  {
+    id: 'true_false',
+    title: 'True or False',
+    description: 'Quick true/false questions about animals!',
+    icon: '✅',
+    difficulty: 'easy',
+    estimatedTime: '5-8 min',
+    path: '/games/true-false',
+    gradient: 'from-cyan-500 to-blue-500',
+    features: [
+      'Fast-paced gameplay',
+      'Quick decisions',
+      'Explanations',
+      'Score tracking'
+    ]
+  },
+  {
+    id: 'quick_flash',
+    title: 'Quick Flash',
+    description: 'Remember the animal from a quick flash!',
+    icon: '⚡',
+    difficulty: 'hard',
+    estimatedTime: '5-10 min',
+    path: '/games/quick-flash',
+    gradient: 'from-purple-500 to-indigo-500',
+    features: [
+      'Memory challenge',
+      '2-second flash',
+      'Quick recall',
+      'Score system'
+    ]
   }
 ];
 
