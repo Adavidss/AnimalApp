@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAnimal } from '../context/AnimalContext';
 import { searchAnimals } from '../api/animals';
 import { fetchIUCNStatus } from '../api/iucn';
 import AnimalCard from '../components/AnimalCard';
@@ -13,7 +12,6 @@ import Pagination from '../components/Pagination';
 const PER_PAGE = 10;
 
 export default function Conservation() {
-  const { enrichAnimal } = useAnimal();
   const [animals, setAnimals] = useState<EnrichedAnimal[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<ConservationStatus | 'all'>('all');
@@ -48,42 +46,76 @@ export default function Conservation() {
       const endIndex = startIndex + PER_PAGE;
       const queriesToProcess = endangeredExamples.slice(startIndex, endIndex);
 
-      for (const query of queriesToProcess) {
+      // Add delay between API calls to avoid rate limiting
+      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+      for (let i = 0; i < queriesToProcess.length; i++) {
+        const query = queriesToProcess[i];
         try {
+          // Add delay between requests (except first one)
+          if (i > 0) {
+            await delay(500); // 500ms delay between requests
+          }
+
           const results = await searchAnimals(query);
           for (const animal of results) {
             if (!seenNames.has(animal.name)) {
               seenNames.add(animal.name);
               
-              // Enrich and check conservation status
-              const enriched = await enrichAnimal(animal.name, animal.taxonomy?.scientific_name || animal.name);
-              if (enriched) {
-                // Get conservation status if not already available
-                if (!enriched.conservationStatus && animal.taxonomy?.scientific_name) {
-                  try {
-                    const status = await fetchIUCNStatus(animal.taxonomy.scientific_name);
-                    if (status) {
-                      enriched.conservationStatus = status;
-                    }
-                  } catch (err) {
-                    // Continue without status
+              // Skip enrichment for conservation page to avoid too many API calls
+              // Just get conservation status directly if available
+              let conservationStatus = null;
+              if (animal.taxonomy?.scientific_name) {
+                try {
+                  // Small delay before IUCN call
+                  await delay(300);
+                  const status = await fetchIUCNStatus(animal.taxonomy.scientific_name);
+                  if (status) {
+                    conservationStatus = status;
                   }
+                } catch (err) {
+                  // Continue without status
+                  console.debug(`Could not fetch IUCN status for ${animal.name}`);
                 }
+              }
 
-                // Filter by selected status
-                if (selectedStatus === 'all' || 
-                    (enriched.conservationStatus && enriched.conservationStatus.category === selectedStatus)) {
-                  allResults.push({
-                    ...enriched,
-                    taxonomy: animal.taxonomy,
-                    locations: animal.locations,
-                    characteristics: animal.characteristics,
-                  });
-                }
+              // Create a minimal enriched animal object for conservation display
+              // Use enrichAnimal for full details, but for conservation page we only need basic info
+              const enrichedAnimal: Partial<EnrichedAnimal> = {
+                id: (animal as any).id || animal.name,
+                name: animal.name,
+                taxonomy: animal.taxonomy,
+                images: (animal as any).images || [],
+                conservationStatus: conservationStatus || undefined,
+                locations: animal.locations,
+                characteristics: animal.characteristics,
+              };
+
+              // Filter by selected status
+              if (selectedStatus === 'all' || 
+                  (conservationStatus && conservationStatus.category === selectedStatus)) {
+                // Skip enrichment to avoid too many API calls - just use basic animal data
+                // Users can click through to see full details
+                allResults.push({
+                  id: (animal as any).id || animal.name,
+                  name: animal.name,
+                  taxonomy: animal.taxonomy,
+                  images: (animal as any).images || [],
+                  conservationStatus: conservationStatus || undefined,
+                  locations: animal.locations,
+                  characteristics: animal.characteristics,
+                  wikipedia: undefined,
+                } as EnrichedAnimal);
               }
             }
           }
-        } catch (err) {
+        } catch (err: any) {
+          // Silently handle errors - don't block loading
+          if (err?.message?.includes('429') || err?.message?.includes('rate limit')) {
+            console.warn(`Rate limited for ${query}, skipping...`);
+            // Continue with next animal
+            continue;
+          }
           console.debug(`Error searching for ${query}:`, err);
         }
       }
@@ -241,4 +273,5 @@ export default function Conservation() {
     </div>
   );
 }
+
 

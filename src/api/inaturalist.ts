@@ -82,10 +82,49 @@ export async function searchINatSpecies(
       url += `q=${encodeURIComponent(query)}&iconic_taxa=Animalia&rank=species&per_page=${perPage}&page=${page}`;
     }
 
-    const response = await fetch(url);
+    // Try direct fetch first
+    let response: Response | null = null;
+    try {
+      response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+    } catch (fetchError: any) {
+      // If CORS error or fetch fails, try with CORS proxy
+      if (fetchError?.message?.includes('CORS') || fetchError?.message?.includes('Failed to fetch')) {
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        try {
+          const proxyResponse = await fetch(proxyUrl);
+          if (proxyResponse.ok) {
+            const proxyData = await proxyResponse.json();
+            try {
+              const data = JSON.parse(proxyData.contents);
+              const results = data.results || [];
+              setCache(cacheKey, results, CACHE_DURATION.ANIMAL_DATA);
+              return results;
+            } catch (parseError) {
+              console.warn('Error parsing proxy response for iNaturalist');
+              return [];
+            }
+          }
+        } catch (proxyError) {
+          // Proxy failed, return empty array
+          console.warn('CORS proxy failed for iNaturalist');
+          return [];
+        }
+      }
+      throw fetchError;
+    }
 
-    if (!response.ok) {
-      console.warn('iNaturalist species search failed');
+    // Handle rate limiting (429)
+    if (response?.status === 429) {
+      console.warn('iNaturalist rate limit hit, returning cached or empty results');
+      return cached || [];
+    }
+
+    if (!response?.ok) {
+      console.warn('iNaturalist species search failed:', response?.status);
       return [];
     }
 
@@ -94,7 +133,12 @@ export async function searchINatSpecies(
 
     setCache(cacheKey, results, CACHE_DURATION.ANIMAL_DATA);
     return results;
-  } catch (error) {
+  } catch (error: any) {
+    // Silently handle CORS and network errors
+    if (error?.message?.includes('CORS') || error?.message?.includes('Failed to fetch') || error?.name === 'TypeError') {
+      console.debug('iNaturalist API call failed (CORS/network):', error.message);
+      return cached || [];
+    }
     console.error('Error searching iNaturalist species:', error);
     return [];
   }
