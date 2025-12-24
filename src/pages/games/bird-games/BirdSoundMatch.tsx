@@ -370,11 +370,18 @@ export default function BirdSoundMatch() {
                 const showResult = selected !== null;
 
                 let bgClass = 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600';
+                let textClass = 'text-gray-900 dark:text-white'; // Explicit text color for default state
+                
                 if (showResult) {
                   if (isCorrect) {
-                    bgClass = 'bg-green-500 text-white';
+                    bgClass = 'bg-green-500';
+                    textClass = 'text-white';
                   } else if (isSelected && !isCorrect) {
-                    bgClass = 'bg-red-500 text-white';
+                    bgClass = 'bg-red-500';
+                    textClass = 'text-white';
+                  } else {
+                    // Other options when result is shown but not selected
+                    textClass = 'text-gray-700 dark:text-gray-300';
                   }
                 }
 
@@ -383,12 +390,12 @@ export default function BirdSoundMatch() {
                     key={bird.id || index}
                     onClick={() => handleSelect(bird.name)}
                     disabled={showResult}
-                    className={`p-6 rounded-lg font-medium text-left transition-all ${bgClass} ${
+                    className={`p-6 rounded-lg font-medium text-left transition-all ${bgClass} ${textClass} ${
                       showResult ? 'cursor-default' : 'cursor-pointer hover:scale-105'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-lg">{bird.name}</span>
+                      <span className="text-lg font-semibold">{bird.name}</span>
                       {showResult && isCorrect && <span className="text-2xl">✅</span>}
                       {showResult && isSelected && !isCorrect && <span className="text-2xl">❌</span>}
                     </div>
