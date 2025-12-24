@@ -27,7 +27,6 @@ import BirdSoundMatch from '../pages/games/bird-games/BirdSoundMatch';
 import TypeTheBird from '../pages/games/bird-games/TypeTheBird';
 import SpeedMatch from '../pages/games/bird-games/SpeedMatch';
 import WordScramble from '../pages/games/bird-games/WordScramble';
-import AlphabetChallenge from '../pages/games/bird-games/AlphabetChallenge';
 import AnimalTrivia from '../pages/games/AnimalTrivia';
 import NameThatAnimal from '../pages/games/NameThatAnimal';
 import AnimalHangman from '../pages/games/AnimalHangman';
@@ -282,7 +281,6 @@ export default function AppRouter() {
           <Route path="/games/bird-games/type-the-bird" element={<TypeTheBird />} />
           <Route path="/games/bird-games/speed-match" element={<SpeedMatch />} />
           <Route path="/games/bird-games/word-scramble" element={<WordScramble />} />
-          <Route path="/games/bird-games/alphabet-challenge" element={<AlphabetChallenge />} />
           <Route path="/api-test" element={<ApiTest />} />
           <Route path="/animal/:name" element={<AnimalDetail />} />
           <Route path="*" element={<NotFound />} />

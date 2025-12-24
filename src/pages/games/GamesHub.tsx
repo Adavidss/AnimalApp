@@ -316,14 +316,6 @@ export default function GamesHub() {
                 <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Unscramble bird names</p>
               </Link>
 
-              <Link
-                to="/games/bird-games/alphabet-challenge"
-                className="bg-white dark:bg-gray-800 rounded-lg md:rounded-xl p-4 md:p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 text-center"
-              >
-                <div className="text-3xl md:text-4xl mb-2">🔤</div>
-                <h3 className="text-sm md:text-base font-bold text-gray-900 dark:text-white mb-1">Alphabet Challenge</h3>
-                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Name birds by letter</p>
-              </Link>
             </div>
           </div>
         </div>
