@@ -97,8 +97,8 @@ export const seasonalAnimals: SeasonalAnimal[] = [
     reason: 'Penguins thrive in cold climates and are iconic winter animals.',
   },
   {
-    name: 'Seal',
-    scientificName: 'Pinnipedia',
+    name: 'Harbor Seal',
+    scientificName: 'Phoca vitulina',
     season: 'winter',
     months: [12, 1, 2],
     reason: 'Seals are often spotted on ice and beaches during winter.',

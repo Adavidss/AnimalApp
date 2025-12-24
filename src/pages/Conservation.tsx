@@ -52,28 +52,42 @@ export default function Conservation() {
         try {
           const searchResults = await searchAnimals(query);
           for (const animal of searchResults) {
-            if (!seenNames.has(animal.name)) {
-              seenNames.add(animal.name);
+            const nameKey = (animal.name || '').toLowerCase();
+            if (!seenNames.has(nameKey)) {
+              seenNames.add(nameKey);
               
-              // Get conservation status in parallel with animal search
-              let conservationStatus = null;
-              if (animal.taxonomy?.scientific_name) {
-                try {
-                  conservationStatus = await fetchIUCNStatus(animal.taxonomy.scientific_name);
-                } catch (err) {
-                  // Continue without status - don't block
-                  console.debug(`Could not fetch IUCN status for ${animal.name}`);
-                }
+              // Skip plants
+              const sciName = (animal.taxonomy?.scientific_name || '').toLowerCase();
+              const kingdom = (animal.taxonomy?.kingdom || '').toLowerCase();
+              const plantKeywords = ['yarrow', 'achillea', 'millefolium', 'grass', 'tree', 'flower', 'plant'];
+              if (kingdom.includes('plantae') || kingdom.includes('plant') ||
+                  plantKeywords.some(kw => nameKey.includes(kw) || sciName.includes(kw))) {
+                continue;
               }
+              
+              // Get conservation status and images in parallel
+              let [conservationStatus, images] = await Promise.all([
+                animal.taxonomy?.scientific_name 
+                  ? fetchIUCNStatus(animal.taxonomy.scientific_name).catch(() => null)
+                  : Promise.resolve(null),
+                // Fetch images for the animal
+                (async () => {
+                  try {
+                    const { fetchUnsplashImages } = await import('../api/images');
+                    return await fetchUnsplashImages(animal.name, 1, animal.taxonomy?.scientific_name || '').catch(() => []);
+                  } catch {
+                    return [];
+                  }
+                })()
+              ]);
 
-              // Filter by selected status
-              if (selectedStatus === 'all' || 
-                  (conservationStatus && conservationStatus.category === selectedStatus)) {
+              // Don't filter here - we'll filter after all results are loaded
+              // This ensures we can filter properly when user changes filter
                 results.push({
-                  id: (animal as any).id || animal.name,
+                  id: (animal as any).id || `${animal.name}-${Date.now()}`,
                   name: animal.name,
                   taxonomy: animal.taxonomy,
-                  images: (animal as any).images || [],
+                  images: images || [],
                   conservationStatus: conservationStatus || undefined,
                   locations: animal.locations,
                   characteristics: animal.characteristics,
@@ -104,9 +118,6 @@ export default function Conservation() {
         }
       }
       
-      // Limit to exactly 10 per page
-      allResults = allResults.slice(0, PER_PAGE);
-
       // Sort by status severity (most endangered first)
       allResults.sort((a, b) => {
         const statusOrder: Record<string, number> = {
@@ -117,7 +128,18 @@ export default function Conservation() {
         return statusOrder[aStatus] - statusOrder[bStatus];
       });
 
-      setAnimals(allResults);
+      // Apply status filter after loading all results
+      let filteredResults = allResults;
+      if (selectedStatus !== 'all') {
+        filteredResults = allResults.filter(animal => 
+          animal.conservationStatus?.category === selectedStatus
+        );
+      }
+
+      // Limit to exactly 10 per page after filtering
+      filteredResults = filteredResults.slice(0, PER_PAGE);
+
+      setAnimals(filteredResults);
     } catch (err) {
       console.error('Error loading conservation animals:', err);
       setError('Failed to load animals. Please try again.');

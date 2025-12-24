@@ -80,8 +80,8 @@ export default function Home() {
               timeoutPromise
             ]) as PromiseSettledResult<any>[];
             
-            // Filter out plants and invalid results
-            const data = results
+            // Filter out plants and invalid results, and retry if we got a plant
+            let data = results
               .filter((r): r is PromiseFulfilledResult<any> => {
                 if (r.status !== 'fulfilled' || !r.value) return false;
                 const animal = r.value;
@@ -92,12 +92,49 @@ export default function Home() {
                 
                 // Exclude plants
                 if (kingdom.includes('plantae') || kingdom.includes('plant')) return false;
-                const plantKeywords = ['yarrow', 'achillea', 'grass', 'tree', 'flower', 'plant', 'vernal'];
+                const plantKeywords = ['yarrow', 'achillea', 'millefolium', 'grass', 'tree', 'flower', 'plant', 'vernal'];
                 if (plantKeywords.some(kw => name.includes(kw) || sciName.includes(kw))) return false;
+                
+                // If name contains "common yarrow" or scientific name is "Achillea millefolium", it's definitely a plant
+                if (name.includes('common yarrow') || sciName.includes('achillea millefolium')) return false;
                 
                 return true;
               })
               .map(r => r.value);
+            
+            // If we got a plant instead of the expected animal, try to fix it
+            for (let i = 0; i < seasonal.length && i < data.length; i++) {
+              const expectedAnimal = seasonal[i];
+              const actualResult = data[i];
+              
+              if (actualResult) {
+                const actualName = (actualResult.name || '').toLowerCase();
+                const actualSciName = (actualResult.taxonomy?.scientific_name || '').toLowerCase();
+                const expectedName = (expectedAnimal.name || '').toLowerCase();
+                
+                // If the result is clearly not the expected animal (e.g., got yarrow when expecting seal)
+                if (actualName.includes('yarrow') || actualSciName.includes('achillea') || 
+                    actualSciName.includes('millefolium') || 
+                    (actualName !== expectedName && !actualName.includes(expectedName))) {
+                  // Try enriching again with just the animal name, not the scientific name
+                  try {
+                    const retryResult = await enrichAnimal(expectedAnimal.name, '');
+                    if (retryResult) {
+                      const retryName = (retryResult.name || '').toLowerCase();
+                      const retrySciName = (retryResult.taxonomy?.scientific_name || '').toLowerCase();
+                      // Only use if it's not a plant
+                      if (!retryName.includes('yarrow') && !retrySciName.includes('achillea') && 
+                          !retrySciName.includes('millefolium')) {
+                        data[i] = retryResult;
+                      }
+                    }
+                  } catch (e) {
+                    // Keep original if retry fails
+                    console.debug('Retry enrichment failed:', e);
+                  }
+                }
+              }
+            }
             setSeasonalAnimalsData(data);
           } catch (error) {
             console.error('Error fetching seasonal animals:', error);
@@ -182,7 +219,7 @@ export default function Home() {
                   <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 md:gap-3">
                     <span className="text-3xl md:text-4xl">⭐</span>
                     Random Animal
-                  </h2>
+                </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 italic">
                     Disclaimer: Sometimes this will give you plants with names that sound like an animal
                   </p>
@@ -207,9 +244,9 @@ export default function Home() {
                 <div>
                   {animalOfTheDay.images && animalOfTheDay.images.length > 0 && (
                     <div className="h-80 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <img
-                        src={animalOfTheDay.images[0]?.urls.regular}
-                        alt={animalOfTheDay.name}
+                    <img
+                      src={animalOfTheDay.images[0]?.urls.regular}
+                      alt={animalOfTheDay.name}
                         className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
                         loading="lazy"
                         onError={(e) => {
@@ -224,13 +261,13 @@ export default function Home() {
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                        {animalOfTheDay.name}
-                      </h3>
-                      <p className="text-lg italic text-gray-600 dark:text-gray-400">
-                        {animalOfTheDay.taxonomy?.scientific_name}
-                      </p>
+                  <div>
+                    <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                      {animalOfTheDay.name}
+                    </h3>
+                    <p className="text-lg italic text-gray-600 dark:text-gray-400">
+                      {animalOfTheDay.taxonomy?.scientific_name}
+                    </p>
                     </div>
                     {/* Favorite Button */}
                     <button
@@ -333,27 +370,27 @@ export default function Home() {
                       </Link>
                     ))
                   : trendingAnimals.map((animal, index) => (
-                      <Link
-                        key={animal}
-                        to={`/animal/${encodeURIComponent(animal)}`}
+                  <Link
+                    key={animal}
+                    to={`/animal/${encodeURIComponent(animal)}`}
                         className="group bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-4 md:p-6 hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-                            #{index + 1}
-                          </span>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                          {animal}
-                        </h3>
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                        #{index + 1}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                      {animal}
+                    </h3>
                         <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                          Explore this popular animal
-                        </p>
+                      Explore this popular animal
+                    </p>
                         <div className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors text-center">
                           Click to Reveal!
-                        </div>
-                      </Link>
-                    ))}
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
@@ -406,25 +443,25 @@ export default function Home() {
                       );
                     })
                     : seasonalAnimals.map((animal) => (
-                      <Link
-                        key={animal.name}
-                        to={`/animal/${encodeURIComponent(animal.name)}`}
+                  <Link
+                    key={animal.name}
+                    to={`/animal/${encodeURIComponent(animal.name)}`}
                         className="group bg-white dark:bg-gray-900 rounded-xl p-4 md:p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                      >
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                          {animal.name}
-                        </h3>
-                        <p className="text-sm italic text-gray-500 dark:text-gray-400 mb-3">
-                          {animal.scientificName}
-                        </p>
+                  >
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                      {animal.name}
+                    </h3>
+                    <p className="text-sm italic text-gray-500 dark:text-gray-400 mb-3">
+                      {animal.scientificName}
+                    </p>
                         <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
-                          {animal.reason}
-                        </p>
+                      {animal.reason}
+                    </p>
                         <div className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors text-center">
                           Click to Reveal!
-                        </div>
-                      </Link>
-                    ))}
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
@@ -434,14 +471,14 @@ export default function Home() {
       {/* Fun Facts Section */}
       {currentFact && (
         <section className="py-6 md:py-10 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-          <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-4">
                 <div>
                   <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
                     <span className="text-3xl md:text-4xl">✨</span>
                     Fun Facts
-                  </h2>
+              </h2>
                   <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
                     Discover amazing animal facts
                   </p>
@@ -451,20 +488,20 @@ export default function Home() {
                   className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm md:text-base font-medium rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                 >
                   <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
+              />
+            </svg>
                   New Fact
                 </button>
               </div>
               <FactCard fact={currentFact} onShuffle={shuffleFact} showCategory={true} showAnimal={true} />
             </div>
-          </div>
-        </section>
+        </div>
+      </section>
       )}
 
     </div>
