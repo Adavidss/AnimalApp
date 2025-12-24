@@ -211,10 +211,14 @@ export default function SizeChallenge() {
             setTimeout(() => reject(new Error('timeout')), 3000)
           );
 
+          // Fix mouse search to get actual mouse, not computer mouse or invertebrate
+          const searchQuery1 = round.animal1.name === 'Mouse' ? 'house mouse animal' : round.animal1.name;
+          const searchQuery2 = round.animal2.name === 'Mouse' ? 'house mouse animal' : round.animal2.name;
+
           // Fetch images for both animals in parallel
           const [images1Result, images2Result] = await Promise.allSettled([
-            Promise.race([fetchUnsplashImages(round.animal1.name, 1), timeoutPromise]),
-            Promise.race([fetchUnsplashImages(round.animal2.name, 1), timeoutPromise])
+            Promise.race([fetchUnsplashImages(searchQuery1, 1), timeoutPromise]),
+            Promise.race([fetchUnsplashImages(searchQuery2, 1), timeoutPromise])
           ]);
           
           // Try multiple image URL sizes with better fallbacks
