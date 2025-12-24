@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FlipCard } from '../../components/games/FlipCard';
 import { fetchUnsplashImages } from '../../api/images';
+import { getRandomAnimal } from '../../api/animals';
+import { useAnimal } from '../../context/AnimalContext';
 import {
   generateMemoryPairs,
   formatTime,
@@ -28,6 +30,7 @@ const ANIMALS_FOR_GAME = [
 ];
 
 export default function MemoryMatch() {
+  const { enrichAnimal } = useAnimal();
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [gameStarted, setGameStarted] = useState(false);
   const [cards, setCards] = useState<Card[]>([]);
@@ -138,22 +141,96 @@ export default function MemoryMatch() {
       const gridSize = getGridSize(difficulty);
       const animalCount = gridSize.pairs;
 
-      // Fetch animal images
+      // Fetch animal images with better fallback logic
       const selectedAnimals = ANIMALS_FOR_GAME.slice(0, animalCount);
-      const imagePromises = selectedAnimals.map(animal =>
-        fetchUnsplashImages(animal, 1)
-      );
+      const animalCards: Array<{ animalName: string; imageUrl: string }> = [];
 
-      const imageResults = await Promise.all(imagePromises);
+      // Use enrichAnimal for better image loading with multiple sources
+      for (const animalName of selectedAnimals) {
+        try {
+          // First try to get random animal data (includes scientific name)
+          const animal = await getRandomAnimal();
+          if (!animal) {
+            // Fallback to using animal name directly
+            const images = await fetchUnsplashImages(animalName, 1);
+            const imageUrl = images[0]?.urls?.small || images[0]?.urls?.thumb || images[0]?.urls?.regular || '';
+            if (imageUrl) {
+              animalCards.push({ animalName, imageUrl });
+            }
+          } else {
+            // Use enrichAnimal which tries multiple sources (iNaturalist, Unsplash, etc.)
+            const enriched = await enrichAnimal(animalName, animal.taxonomy?.scientific_name || animalName);
+            if (enriched) {
+              // Try multiple image sources
+              let imageUrl = '';
+              
+              // Priority 1: enriched images (from iNaturalist/Unsplash)
+              if (enriched.images && enriched.images.length > 0) {
+                imageUrl = enriched.images[0]?.urls?.small || 
+                          enriched.images[0]?.urls?.thumb || 
+                          enriched.images[0]?.urls?.regular || '';
+              }
+              
+              // Priority 2: Wikipedia thumbnail
+              if (!imageUrl && enriched.wikipedia?.thumbnail?.source) {
+                imageUrl = enriched.wikipedia.thumbnail.source;
+              }
+              
+              // Priority 3: Fallback to fetchUnsplashImages directly
+              if (!imageUrl) {
+                try {
+                  const images = await fetchUnsplashImages(animalName, 1, animal.taxonomy?.scientific_name);
+                  imageUrl = images[0]?.urls?.small || images[0]?.urls?.thumb || images[0]?.urls?.regular || '';
+                } catch (e) {
+                  console.debug(`Failed to fetch image for ${animalName}:`, e);
+                }
+              }
+              
+              if (imageUrl) {
+                animalCards.push({ animalName, imageUrl });
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to load image for ${animalName}:`, error);
+          // Try direct Unsplash fetch as last resort
+          try {
+            const images = await fetchUnsplashImages(animalName, 1);
+            const imageUrl = images[0]?.urls?.small || images[0]?.urls?.thumb || images[0]?.urls?.regular || '';
+            if (imageUrl) {
+              animalCards.push({ animalName, imageUrl });
+            }
+          } catch (e) {
+            console.debug(`All image sources failed for ${animalName}`);
+          }
+        }
+      }
 
-      // Create card data
-      const animalCards = selectedAnimals.map((animal, index) => ({
-        animalName: animal,
-        imageUrl: imageResults[index]?.[0]?.urls?.small || ''
-      })).filter(card => card.imageUrl);
+      // Ensure we have enough cards (retry if needed)
+      if (animalCards.length < animalCount) {
+        const missing = animalCount - animalCards.length;
+        const additionalAnimals = ANIMALS_FOR_GAME.slice(animalCount, animalCount + missing * 2);
+        for (const animalName of additionalAnimals) {
+          if (animalCards.length >= animalCount) break;
+          
+          try {
+            const images = await fetchUnsplashImages(animalName, 1);
+            const imageUrl = images[0]?.urls?.small || images[0]?.urls?.thumb || images[0]?.urls?.regular || '';
+            if (imageUrl && !animalCards.find(c => c.animalName === animalName)) {
+              animalCards.push({ animalName, imageUrl });
+            }
+          } catch (e) {
+            // Skip this animal
+          }
+        }
+      }
+
+      if (animalCards.length === 0) {
+        throw new Error('No images could be loaded. Please check your internet connection.');
+      }
 
       // Generate pairs and shuffle
-      const cardPairs = generateMemoryPairs(animalCards, animalCards.length);
+      const cardPairs = generateMemoryPairs(animalCards, Math.min(animalCards.length, animalCount));
 
       // Create card objects with unique IDs
       const gameCards: Card[] = cardPairs.map((card, index) => ({

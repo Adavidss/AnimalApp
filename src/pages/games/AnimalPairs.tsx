@@ -26,13 +26,48 @@ export default function AnimalPairs() {
       const animalList: any[] = [];
       const used = new Set<string>();
 
-      while (animalList.length < 6) {
+      let attempts = 0;
+      const maxAttempts = 20; // Try up to 20 animals to get 6 with images
+      
+      while (animalList.length < 6 && attempts < maxAttempts) {
+        attempts++;
         const animal = await getRandomAnimal();
         if (animal && !used.has(animal.name)) {
-          const enriched = await enrichAnimal(animal.name, animal.taxonomy?.scientific_name || animal.name);
-          if (enriched && enriched.images && enriched.images.length > 0) {
-            animalList.push(enriched);
-            used.add(animal.name);
+          try {
+            const enriched = await enrichAnimal(animal.name, animal.taxonomy?.scientific_name || animal.name);
+            if (enriched) {
+              // Try multiple image sources
+              let imageUrl = '';
+              
+              // Priority 1: enriched images (from iNaturalist/Unsplash)
+              if (enriched.images && enriched.images.length > 0) {
+                imageUrl = enriched.images[0]?.urls?.small || 
+                          enriched.images[0]?.urls?.thumb || 
+                          enriched.images[0]?.urls?.regular || '';
+              }
+              
+              // Priority 2: Wikipedia thumbnail
+              if (!imageUrl && enriched.wikipedia?.thumbnail?.source) {
+                imageUrl = enriched.wikipedia.thumbnail.source;
+                // Add to images array for consistency
+                if (!enriched.images) enriched.images = [];
+                enriched.images.push({
+                  id: 'wikipedia',
+                  urls: { small: imageUrl, thumb: imageUrl, regular: imageUrl, full: imageUrl, raw: imageUrl },
+                  alt_description: animal.name,
+                  user: { name: 'Wikipedia', username: 'wikipedia' },
+                  links: { html: '' }
+                });
+              }
+              
+              // Only add if we have at least one image
+              if (imageUrl || (enriched.images && enriched.images.length > 0)) {
+                animalList.push(enriched);
+                used.add(animal.name);
+              }
+            }
+          } catch (error) {
+            console.debug(`Failed to enrich ${animal.name}:`, error);
           }
         }
       }
@@ -149,7 +184,11 @@ export default function AnimalPairs() {
             {animals.map((animal, index) => {
               const isSelected = selected.includes(index);
               const isMatched = matched.has(animal.name);
-              const imageUrl = animal.images?.[0]?.urls?.small || animal.images?.[0]?.urls?.thumb || '';
+              // Try multiple image sources with fallbacks
+              const imageUrl = animal.images?.[0]?.urls?.small || 
+                             animal.images?.[0]?.urls?.thumb || 
+                             animal.images?.[0]?.urls?.regular ||
+                             animal.wikipedia?.thumbnail?.source || '';
 
               return (
                 <button

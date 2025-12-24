@@ -82,7 +82,11 @@ export default function QuickFlash() {
     }
   };
 
-  const imageUrl = animal?.images?.[0]?.urls?.regular || animal?.images?.[0]?.urls?.small || '';
+  // Try multiple image sources with fallbacks
+  const imageUrl = animal?.images?.[0]?.urls?.regular || 
+                  animal?.images?.[0]?.urls?.small || 
+                  animal?.images?.[0]?.urls?.thumb ||
+                  animal?.wikipedia?.thumbnail?.source || '';
 
   if (loading && !animal) {
     return (

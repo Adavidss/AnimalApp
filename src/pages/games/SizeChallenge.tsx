@@ -210,14 +210,54 @@ export default function SizeChallenge() {
             fetchUnsplashImages(round.animal2.name, 1)
           ]);
           
+          // Try multiple image URL sizes with better fallbacks
           if (images1Result.status === 'fulfilled' && images1Result.value[0]) {
             round.animal1.image = images1Result.value[0]?.urls?.small || 
-                                  images1Result.value[0]?.urls?.thumb || '';
+                                  images1Result.value[0]?.urls?.thumb || 
+                                  images1Result.value[0]?.urls?.regular || '';
           }
           
           if (images2Result.status === 'fulfilled' && images2Result.value[0]) {
             round.animal2.image = images2Result.value[0]?.urls?.small || 
-                                  images2Result.value[0]?.urls?.thumb || '';
+                                  images2Result.value[0]?.urls?.thumb || 
+                                  images2Result.value[0]?.urls?.regular || '';
+          }
+          
+          // If still no image, try with timeout and different query
+          if (!round.animal1.image && round.animal1.name) {
+            try {
+              const fallbackImages = await Promise.race([
+                fetchUnsplashImages(round.animal1.name, 1),
+                new Promise<typeof fetchUnsplashImages extends (...args: any[]) => Promise<infer T> ? T : never>((_, reject) => 
+                  setTimeout(() => reject(new Error('timeout')), 2000)
+                )
+              ]);
+              if (fallbackImages?.[0]) {
+                round.animal1.image = fallbackImages[0]?.urls?.small || 
+                                     fallbackImages[0]?.urls?.thumb || 
+                                     fallbackImages[0]?.urls?.regular || '';
+              }
+            } catch (e) {
+              // Keep empty image
+            }
+          }
+          
+          if (!round.animal2.image && round.animal2.name) {
+            try {
+              const fallbackImages = await Promise.race([
+                fetchUnsplashImages(round.animal2.name, 1),
+                new Promise<typeof fetchUnsplashImages extends (...args: any[]) => Promise<infer T> ? T : never>((_, reject) => 
+                  setTimeout(() => reject(new Error('timeout')), 2000)
+                )
+              ]);
+              if (fallbackImages?.[0]) {
+                round.animal2.image = fallbackImages[0]?.urls?.small || 
+                                     fallbackImages[0]?.urls?.thumb || 
+                                     fallbackImages[0]?.urls?.regular || '';
+              }
+            } catch (e) {
+              // Keep empty image
+            }
           }
         } catch (error) {
           console.error('Failed to fetch images:', error);
