@@ -22,6 +22,7 @@ export function FlipCard({
   disabled = false
 }: FlipCardProps) {
   const [_shouldAnimate, setShouldAnimate] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (isFlipped) {
@@ -29,10 +30,19 @@ export function FlipCard({
     }
   }, [isFlipped]);
 
+  useEffect(() => {
+    // Reset error state when image changes
+    setImageError(false);
+  }, [frontImage]);
+
   const handleClick = () => {
     if (!disabled && !isFlipped && !isMatched) {
       onClick();
     }
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
   };
 
   return (
@@ -52,12 +62,13 @@ export function FlipCard({
       <div className={`flip-card-inner ${isFlipped || isMatched ? 'flipped' : ''}`}>
         {/* Front of card (face up - shows image) */}
         <div className="flip-card-front">
-          {frontImage ? (
+          {frontImage && !imageError ? (
             <img
               src={frontImage}
               alt={frontText || 'Animal card'}
               className="w-full h-full object-cover"
               loading="lazy"
+              onError={handleImageError}
             />
           ) : (
             <div className="flex items-center justify-center h-full bg-gradient-to-br from-purple-400 to-pink-400 text-white text-2xl font-bold">
