@@ -70,7 +70,11 @@ export default function AnimalSort() {
 
   const checkOrder = () => {
     setChecking(true);
-    const correctOrder = [...animals].sort((a, b) => b[sortType] - a[sortType]);
+    const correctOrder = [...animals].sort((a, b) => {
+      const valA = sortType === 'weight' ? a.weight : sortType === 'height' ? a.height : a.length;
+      const valB = sortType === 'weight' ? b.weight : sortType === 'height' ? b.height : b.length;
+      return valB - valA;
+    });
     const correctNames = correctOrder.map(a => a.name);
     
     let correctCount = 0;
@@ -174,13 +178,15 @@ export default function AnimalSort() {
                       <span className="text-2xl font-bold text-gray-400">{index + 1}</span>
                       <span className="text-lg font-medium text-gray-900 dark:text-white">{animalName}</span>
                     </div>
-                    {checking && (
-                      <span className="text-2xl">
-                        {userOrder[index] === [...animals].sort((a, b) => b[sortType] - a[sortType])[index].name 
-                          ? '✅' 
-                          : '❌'}
-                      </span>
-                    )}
+                    {checking && (() => {
+                      const correctOrder = [...animals].sort((a, b) => {
+                        const valA = sortType === 'weight' ? a.weight : sortType === 'height' ? a.height : a.length;
+                        const valB = sortType === 'weight' ? b.weight : sortType === 'height' ? b.height : b.length;
+                        return valB - valA;
+                      });
+                      const isCorrect = userOrder[index] === correctOrder[index].name;
+                      return <span className="text-2xl">{isCorrect ? '✅' : '❌'}</span>;
+                    })()}
                   </div>
                 );
               })}
