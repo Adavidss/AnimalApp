@@ -165,11 +165,11 @@ function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile Navigation */}
           <div className="md:hidden pb-4">
-            <nav className="flex gap-3 overflow-x-auto">
+            <nav className="flex gap-3 overflow-x-auto overflow-y-visible">
               <Link to="/" className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                 Home
               </Link>
-              <div className="relative">
+              <div className="relative z-50">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -190,10 +190,13 @@ function Layout({ children }: { children: React.ReactNode }) {
                   <>
                     {/* Backdrop to close dropdown on click outside */}
                     <div 
-                      className="fixed inset-0 z-40"
+                      className="fixed inset-0 z-[45] bg-black/20"
                       onClick={() => setShowAnimalsDropdown(false)}
                     />
-                    <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+                    <div 
+                      className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[50]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Link to="/explorer" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors rounded-t-lg touch-manipulation">
                         <span className="text-xl">🔍</span>
                         <span className="font-medium text-gray-700 dark:text-gray-300">All Animals</span>
