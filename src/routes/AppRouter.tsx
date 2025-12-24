@@ -172,46 +172,59 @@ function Layout({ children }: { children: React.ReactNode }) {
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setShowAnimalsDropdown(!showAnimalsDropdown)}
-                  className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap flex items-center gap-1"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowAnimalsDropdown(!showAnimalsDropdown);
+                  }}
+                  className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap flex items-center gap-1 touch-manipulation active:opacity-70"
+                  aria-expanded={showAnimalsDropdown}
+                  aria-haspopup="true"
                 >
                   Categories
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className={`w-3 h-3 transition-transform ${showAnimalsDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
                 {showAnimalsDropdown && (
-                  <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
-                    <Link to="/explorer" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-t-lg">
-                      <span className="text-xl">🔍</span>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">All Animals</span>
-                    </Link>
-                    <div className="border-t border-gray-200 dark:border-gray-700"></div>
-                    <Link to="/dogs" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      <span className="text-xl">🐕</span>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Dogs</span>
-                    </Link>
-                    <Link to="/cats" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      <span className="text-xl">🐈</span>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Cats</span>
-                    </Link>
-                    <Link to="/birds" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      <span className="text-xl">🐦</span>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Birds</span>
-                    </Link>
-                    <Link to="/wildlife" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      <span className="text-xl">🦁</span>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Wildlife</span>
-                    </Link>
-                    <Link to="/fish" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      <span className="text-xl">🐠</span>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Aquatic</span>
-                    </Link>
-                    <Link to="/conservation" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-b-lg">
-                      <span className="text-xl">🛡️</span>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Conservation Status</span>
-                    </Link>
-                  </div>
+                  <>
+                    {/* Backdrop to close dropdown on click outside */}
+                    <div 
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowAnimalsDropdown(false)}
+                    />
+                    <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+                      <Link to="/explorer" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors rounded-t-lg touch-manipulation">
+                        <span className="text-xl">🔍</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">All Animals</span>
+                      </Link>
+                      <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                      <Link to="/dogs" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
+                        <span className="text-xl">🐕</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Dogs</span>
+                      </Link>
+                      <Link to="/cats" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
+                        <span className="text-xl">🐈</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Cats</span>
+                      </Link>
+                      <Link to="/birds" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
+                        <span className="text-xl">🐦</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Birds</span>
+                      </Link>
+                      <Link to="/wildlife" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
+                        <span className="text-xl">🦁</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Wildlife</span>
+                      </Link>
+                      <Link to="/fish" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation">
+                        <span className="text-xl">🐠</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Aquatic</span>
+                      </Link>
+                      <Link to="/conservation" onClick={() => setShowAnimalsDropdown(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors rounded-b-lg touch-manipulation">
+                        <span className="text-xl">🛡️</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Conservation Status</span>
+                      </Link>
+                    </div>
+                  </>
                 )}
               </div>
               <Link to="/favorites" className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
