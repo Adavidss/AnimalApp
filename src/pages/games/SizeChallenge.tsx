@@ -101,6 +101,7 @@ export default function SizeChallenge() {
   const [gameWon, setGameWon] = useState(false);
   const [score, setScore] = useState(0);
   const [highScore, setHighScoreState] = useState<{ score: number; date?: string } | null>(null);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   // Load high score
   useEffect(() => {
