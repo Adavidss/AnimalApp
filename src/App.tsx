@@ -3,6 +3,7 @@ import { AnimalProvider } from './context/AnimalContext';
 import AppRouter from './routes/AppRouter';
 import { clearImageCache, clearAllCache, getCacheStats } from './utils/cache';
 import { ToastProvider } from './components/Toast';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function App() {
   useEffect(() => {
@@ -19,11 +20,13 @@ function App() {
   }, []);
 
   return (
-    <AnimalProvider>
-      <ToastProvider>
-        <AppRouter />
-      </ToastProvider>
-    </AnimalProvider>
+    <ErrorBoundary>
+      <AnimalProvider>
+        <ToastProvider>
+          <AppRouter />
+        </ToastProvider>
+      </AnimalProvider>
+    </ErrorBoundary>
   );
 }
 

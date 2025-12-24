@@ -62,7 +62,21 @@ export async function getAllDogBreeds(): Promise<DogBreed[]> {
     });
 
     if (!response.ok) {
-      console.warn('The Dog API breeds fetch failed');
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.warn(`The Dog API breeds fetch failed: ${response.status} ${response.statusText}`, errorText);
+      // Try without API key if we have one (some endpoints work without key)
+      if (API_KEYS.THE_DOG_API) {
+        try {
+          const fallbackResponse = await fetch(`${API_URLS.THE_DOG_API}/breeds`);
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+            setCache(cacheKey, fallbackData, CACHE_DURATION.ANIMAL_DATA);
+            return fallbackData;
+          }
+        } catch (fallbackError) {
+          console.error('Fallback Dog API fetch also failed:', fallbackError);
+        }
+      }
       return [];
     }
 

@@ -148,15 +148,31 @@ export function AnimalProvider({ children }: { children: ReactNode }) {
       }
       
       const startTime = Date.now();
-      const [wikipedia, images, conservationStatus, gbifData, sounds, marineData, inatData, fishData] = await Promise.allSettled([
-        fetchWikipediaSummary(animalName),
-        fetchUnsplashImages(animalName, 3, scientificName), // Pass scientific name for better accuracy
-        fetchIUCNStatus(scientificName),
-        searchGBIFSpecies(scientificName),
-        isLikelyBird(animalName) ? fetchAnimalSounds(animalName, 5) : Promise.resolve([]), // Only fetch sounds for birds
-        searchMarineSpecies(scientificName),
-        getINatSpeciesByName(animalName), // iNaturalist data
-        Promise.resolve(null), // FishBase disabled due to SSL certificate issues
+      
+      // Helper function to add timeout to promises
+      const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number = 5000): Promise<T> => {
+        return Promise.race([
+          promise,
+          new Promise<T>((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+          )
+        ]);
+      };
+
+      // Prioritize essential data: images and Wikipedia (for initial display)
+      // Defer other API calls to improve performance
+      const [wikipedia, images] = await Promise.allSettled([
+        withTimeout(fetchWikipediaSummary(animalName), 3000).catch(() => null),
+        withTimeout(fetchUnsplashImages(animalName, 3, scientificName), 4000).catch(() => []), // Pass scientific name for better accuracy
+      ]);
+      
+      // Fetch other data in parallel but with timeout protection (longer timeout for secondary data)
+      const [conservationStatus, gbifData, sounds, marineData, inatData] = await Promise.allSettled([
+        withTimeout(fetchIUCNStatus(scientificName), 3000).catch(() => null),
+        withTimeout(searchGBIFSpecies(scientificName), 3000).catch(() => null),
+        isLikelyBird(animalName) ? withTimeout(fetchAnimalSounds(animalName, 5), 4000).catch(() => []) : Promise.resolve([]), // Only fetch sounds for birds
+        withTimeout(searchMarineSpecies(scientificName), 3000).catch(() => null),
+        withTimeout(getINatSpeciesByName(animalName), 3000).catch(() => null), // iNaturalist data
       ]);
       
       if (import.meta.env.DEV) {
@@ -216,7 +232,7 @@ export function AnimalProvider({ children }: { children: ReactNode }) {
         // NEW: Additional API data
         inatObservations,
         inatData: inatData.status === 'fulfilled' ? inatData.value || undefined : undefined,
-        fishData: fishData.status === 'fulfilled' && fishData.value ? fishData.value[0] : undefined,
+        fishData: undefined, // FishBase disabled due to SSL certificate issues
         fishEcology,
       };
 

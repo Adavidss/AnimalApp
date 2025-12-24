@@ -170,6 +170,7 @@ export function trackAnimalView(animalName: string): void {
 
 /**
  * Get trending animals based on views in the last 7 days
+ * Falls back to popular animals if no views exist
  */
 export function getTrendingAnimals(limit: number = 5): string[] {
   try {
@@ -192,10 +193,25 @@ export function getTrendingAnimals(limit: number = 5): string[] {
       .sort((a, b) => b[1] - a[1])
       .map((entry) => entry[0]);
 
-    return sorted.slice(0, limit);
+    // If we have trending animals, return them
+    if (sorted.length > 0) {
+      return sorted.slice(0, limit);
+    }
+
+    // Fallback to popular animals if no views exist
+    const popularAnimals = [
+      'Lion', 'Tiger', 'Elephant', 'Giraffe', 'Panda',
+      'Dolphin', 'Eagle', 'Penguin', 'Wolf', 'Bear'
+    ];
+    return popularAnimals.slice(0, limit);
   } catch (error) {
     console.error('Error getting trending animals:', error);
-    return [];
+    // Fallback to popular animals on error
+    const popularAnimals = [
+      'Lion', 'Tiger', 'Elephant', 'Giraffe', 'Panda',
+      'Dolphin', 'Eagle', 'Penguin', 'Wolf', 'Bear'
+    ];
+    return popularAnimals.slice(0, limit);
   }
 }
 

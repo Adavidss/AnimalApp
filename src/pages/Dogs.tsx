@@ -30,8 +30,14 @@ export default function Dogs() {
     setLoading(true);
     try {
       const data = await getAllDogBreeds();
-      setBreeds(data);
-      setFilteredBreeds(data);
+      if (data && data.length > 0) {
+        setBreeds(data);
+        setFilteredBreeds(data);
+      } else {
+        console.warn('No dog breeds returned from API. This might be due to missing API key or API issues.');
+        setBreeds([]);
+        setFilteredBreeds([]);
+      }
     } catch (error) {
       console.error('Error loading dog breeds:', error);
     } finally {

@@ -41,38 +41,63 @@ export default function Home() {
     // Load initial fun fact
     shuffleFact();
     
-    // Fetch full animal data for featured sections
+    // Fetch full animal data for featured sections (with error boundaries and timeout)
     const fetchFeaturedData = async () => {
-      // Fetch Trending animals
-      if (trending.length > 0 && enrichAnimal) {
-        try {
-          const promises = trending.map(name => enrichAnimal(name, ''));
-          const results = await Promise.allSettled(promises);
-          const data = results
-            .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value !== null)
-            .map(r => r.value);
-          setTrendingAnimalsData(data);
-        } catch (error) {
-          console.error('Error fetching trending animals:', error);
+      try {
+        // Fetch Trending animals (with timeout protection)
+        if (trending.length > 0 && enrichAnimal) {
+          try {
+            const timeoutPromise = new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout')), 15000)
+            );
+            
+            const promises = trending.map(name => enrichAnimal(name, ''));
+            const results = await Promise.race([
+              Promise.allSettled(promises),
+              timeoutPromise
+            ]) as PromiseSettledResult<any>[];
+            
+            const data = results
+              .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value !== null)
+              .map(r => r.value);
+            setTrendingAnimalsData(data);
+          } catch (error) {
+            console.error('Error fetching trending animals:', error);
+            // Keep trendingAnimals names so section still shows even if enrichment fails
+          }
         }
-      }
-      
-      // Fetch Seasonal animals
-      if (seasonal.length > 0 && enrichAnimal) {
-        try {
-          const promises = seasonal.map(animal => enrichAnimal(animal.name, animal.scientificName));
-          const results = await Promise.allSettled(promises);
-          const data = results
-            .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value !== null)
-            .map(r => r.value);
-          setSeasonalAnimalsData(data);
-        } catch (error) {
-          console.error('Error fetching seasonal animals:', error);
+        
+        // Fetch Seasonal animals (with timeout protection)
+        if (seasonal.length > 0 && enrichAnimal) {
+          try {
+            const timeoutPromise = new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout')), 15000)
+            );
+            
+            const promises = seasonal.map(animal => enrichAnimal(animal.name, animal.scientificName));
+            const results = await Promise.race([
+              Promise.allSettled(promises),
+              timeoutPromise
+            ]) as PromiseSettledResult<any>[];
+            
+            const data = results
+              .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value !== null)
+              .map(r => r.value);
+            setSeasonalAnimalsData(data);
+          } catch (error) {
+            console.error('Error fetching seasonal animals:', error);
+            // Keep seasonalAnimals names so section still shows even if enrichment fails
+          }
         }
+      } catch (error) {
+        console.error('Error in fetchFeaturedData:', error);
       }
     };
     
-    fetchFeaturedData();
+    // Defer fetching to avoid blocking initial render
+    setTimeout(() => {
+      fetchFeaturedData();
+    }, 100);
   }, [enrichAnimal]);
 
   const shuffleFact = () => {
@@ -244,7 +269,7 @@ export default function Home() {
       )}
 
       {/* Trending This Week */}
-      {trendingAnimals.length > 0 && (
+      {(trendingAnimals.length > 0 || trendingAnimalsData.length > 0) && (
         <section className="py-6 md:py-8 bg-white dark:bg-gray-900">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
